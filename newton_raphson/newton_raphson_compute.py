@@ -18,13 +18,16 @@ def calc_newt_and_return_root_no(x: complex, poly: np_poly.Polynomial, deriv: np
     return idx
 
 def calculate_newton_raphson(poly: np_poly.Polynomial, N: int = 500,
+                             real_linspace=None, imaginary_linspace=None,
                              real_lower: int = -5, real_upper: int = 5,
                              img_lower: int = -5, img_upper: int = 5, iterations: int = 50):
     """
     Function to visualize converge of Newton-Raphson algorithm for given fragment of complex space, defined by real upper/lower
-    and img lower/upper bounds.
+    and img lower/upper bounds or by real_linspace and imaginary_linspace.
     :param poly: Polynomial used to compute Newton-Raphson. Can be max of degree 10
     :param N: How many points (along each axis!) should be generated. In total N^2 points will be checked
+    :param real_linspace: Real values, optional. If not provided, real_lower and real_upper will be used.
+    :param imaginary_linspace: Imaginary values, optional. If not provided, imaginary_lower and imaginary_upper will be used.
     :param iterations: maximum amount of Netwon-Raphson iterations performed for each seed value
     :return: 2D array of np.int8. Value on position [a, b] is index of the root that was result of performing Newton-Raphson
         with given polynomial and corresponding imaginary number (r + img*j) where r = real_lower + (real_upper - real_lower) * a / N
@@ -35,8 +38,8 @@ def calculate_newton_raphson(poly: np_poly.Polynomial, N: int = 500,
     deriv = poly.deriv()
     roots = poly.roots()
 
-    real = np.linspace(real_lower, real_upper, N)
-    imag = np.linspace(img_lower, img_upper, N)
+    real = np.linspace(real_lower, real_upper, N) if real_linspace is None else real_linspace
+    imag = np.linspace(img_lower, img_upper, N) if imaginary_linspace is None else imaginary_linspace
     re, im = np.meshgrid(imag, real)
     z_plane = re + 1j * im
 
