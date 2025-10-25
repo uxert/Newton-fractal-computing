@@ -61,14 +61,18 @@ def real_example():
         print(f"Could not calculate Newton-Raphson, error occured: {str(e)}")
 
     # let's try something we know will converge for all points
-    # (it can be checked by performing the algorithm on 0 + 0j seed
+    # (it can be checked by performing the algorithm on seed that is average of all 3 roots)
+    # (this fact works only for cubic polynomials and is explained by 3B1B:
+    # https://youtu.be/LqbZpur38nw?si=qyPM0j2mz9AN6Nsx&t=1038 )
     # maybe 5 + z + 2z^2 + z^3?
     poly = np_poly.Polynomial(coef=(5, 1, 2, 1))
     # 4z + 3z^2
     deriv = np_poly.Polynomial(coef=(1, 4, 3))
     roots = poly.roots()
+    avg_seed = np.mean(roots)
     try:
-        test_newton = scipy.optimize.newton(poly, x0=0 + 0j, fprime=deriv, tol=1e-5)
+        test_newton = scipy.optimize.newton(poly, x0=avg_seed, fprime=deriv, tol=1e-5)
+        print("converges!")
     except RuntimeError as e:
         print(f"Could not calculate Newton-Raphson for poly {str(poly)}, error occured: {str(e)}")
     # correctly calculated, this means that for all points Newton-Raphson method will converge
@@ -81,7 +85,7 @@ def real_example():
     re, im = np.meshgrid(imag, real)
     z_plane = re + 1j * im
     print(z_plane.shape)
-
+    exit(0)
     result = np.empty(shape=z_plane.shape)
     for i, j in product(range(z_plane.shape[0]), range(z_plane.shape[1])):
         result[i,j] = calc_newt_and_return_root_no(z_plane[i, j], poly, deriv, roots)
