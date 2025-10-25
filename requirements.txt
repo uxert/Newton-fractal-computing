@@ -1,2 +1,4 @@
 pillow
 scipy
+matplotlib
+numpy
