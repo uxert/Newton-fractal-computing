@@ -1,7 +1,7 @@
 """This module contains things that are used by rest of the package"""
 
 import numpy as np
-from typing import List
+from typing import List, Tuple
 import matplotlib.pyplot as plt
 from PIL import Image
 
@@ -41,3 +41,34 @@ def visualize_np_array(arr: np.ndarray[int], name="image.png") -> None:
     img = Image.fromarray(indexed_arr, mode='P')
     img.putpalette(palette)
     img.save(name)
+
+
+def divide_complex_space(real_lower: float, real_upper: float, img_lower: float, img_upper: float,
+                         N_points: int, sqrt_N_fragments: int) -> List[Tuple]:
+    """
+    Divide 2D complex space into chunks for parallel computation. The space will always be divided into "square" amount of chunks
+    so that they can be later nicely aligned with np.block()
+    N_points is number of points PER FRAGMENT. So in total there will be N_points * sqrt_N_fragments**2 points!
+    N_points is the value that one worker will receive at a time
+    :returns: List of tuples, each tuple has two ndarrays - first one representing real numbers, second one representing imaginary numbers
+    """
+    fragments = []
+
+    for i in range(sqrt_N_fragments):
+        for j in range(sqrt_N_fragments):
+            # Calculate bounds for this fragment
+            real_start = real_lower + i * (real_upper - real_lower) / sqrt_N_fragments
+            real_end = real_lower + (i + 1) * (real_upper - real_lower) / sqrt_N_fragments
+
+            img_start = img_lower + j * (img_upper - img_lower) / sqrt_N_fragments
+            img_end = img_lower + (j + 1) * (img_upper - img_lower) / sqrt_N_fragments
+
+            # Create linspaces for this fragment
+            # watch for endpoint=False, otherwise the chunks will overlap
+            real_linspace = np.linspace(real_start, real_end, N_points, endpoint=False)
+            img_linspace = np.linspace(img_start, img_end, N_points, endpoint=False)
+
+            fragments.append((real_linspace, img_linspace))
+
+    return fragments
+
