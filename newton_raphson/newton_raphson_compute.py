@@ -46,8 +46,7 @@ def calculate_newton_raphson(poly: np_poly.Polynomial, N: int = 500,
     result = np.empty(shape=z_plane.shape, dtype=np.int8)
     for i, j in product(range(z_plane.shape[0]), range(z_plane.shape[1])):
         result[i,j] = calc_newt_and_return_root_no(z_plane[i, j], poly, deriv, roots, iterations=iterations)
-        if i % (z_plane.shape[0]//50) == 0 and j==0:
-            print("#", end="")
-    print("\ndone!")
+        if i % (z_plane.shape[0] // 10) == 0 and j == 0:
+            print(f"{int(i / z_plane.shape[0] * 100)}|", end="")
 
     return result
