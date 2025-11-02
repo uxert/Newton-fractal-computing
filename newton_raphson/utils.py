@@ -4,6 +4,7 @@ import numpy as np
 from typing import List, Tuple
 import matplotlib.pyplot as plt
 from PIL import Image
+from math import sqrt
 
 
 def compare_with_values(values: List[complex], x: complex, epsilon=1e-4) -> int:
@@ -72,3 +73,28 @@ def divide_complex_space(real_lower: float, real_upper: float, img_lower: float,
 
     return fragments
 
+def combine_arrays_into_square(results: List[np.ndarray]):
+    """
+    Takes N^2 arrays and combines them into N x N matrix.
+    :raises ValueError: If all arrays are not the same size, are not 2D or are not square
+    """
+    for arr in results:
+        if arr.shape != results[0].shape:
+            raise ValueError("All arrays must have same shape")
+        if arr.ndim != 2:
+            raise ValueError("All arrays must have 2 dimensions")
+        if arr.shape[0] != arr.shape[1]:
+            raise ValueError("All arrays must be square")
+    n = int(sqrt(len(results)))
+    grid = []
+    for i in range(n):
+        row = []
+        for j in range(n):
+            idx = i * n + j
+            row.append(results[idx])
+        grid.append(row)
+
+    # Combine into single array
+    big_array = np.block(grid)
+    print(big_array.dtype)
+    return big_array

@@ -5,7 +5,7 @@ from math import sqrt
 import sys
 
 from .newton_raphson_compute import calculate_newton_raphson
-
+from .utils import combine_arrays_into_square
 
 def newton_raphson_worker(mp_queue: Queue, worker_no: int, poly: np.polynomial.Polynomial, real_linspace, imaginary_linspace):
     try:
@@ -57,19 +57,7 @@ def launch_parallel_fixed(poly: np.polynomial.Polynomial, chunks: List[Tuple]) -
 
     results.sort(key=lambda x: x[0])  # Sort by worker_id to maintain order
     results = [pair[1] for pair in results]  # after sorting leave only the arrays
-    n = int(sqrt(len(results)))
-    grid = []
-    for i in range(n):
-        row = []
-        for j in range(n):
-            idx = i * n + j
-            row.append(results[idx])
-        grid.append(row)
-
-    # Combine into single array
-    big_array = np.block(grid)
-    print(big_array.dtype)
-    return big_array
+    return combine_arrays_into_square(results)
 
 def launch_parallel_pool(poly: np.polynomial.Polynomial, chunks: List[Tuple], n_workers=4) -> np.ndarray:
     """
@@ -95,18 +83,6 @@ def launch_parallel_pool(poly: np.polynomial.Polynomial, chunks: List[Tuple], n_
 
     results.sort(key=lambda x: x[0])  # Sort by task id to maintain order
     results = [pair[1] for pair in results]  # after sorting leave only the arrays
-    n = int(sqrt(len(results)))
-    grid = []
-
-    for i in range(n):
-        row = []
-        for j in range(n):
-            idx = i * n + j
-            row.append(results[idx])
-        grid.append(row)
-
-    # Combine into a single array
-    big_array = np.block(grid)
-    return big_array
+    return combine_arrays_into_square(results)
 
 
