@@ -13,14 +13,24 @@ if __name__ == "__main__":
     real_lower = - real_upper
     img_upper = real_upper
     img_lower = - img_upper
-    sqrt_points_per_chunk = 500
-    sqrt_chunks_amount = 3
-    b = time.perf_counter()
-    chunks = utils.divide_complex_space(real_lower, real_upper, img_lower, img_upper, sqrt_points_per_chunk, sqrt_chunks_amount)
-    e = time.perf_counter()
-    print(f"Dividing into chunks took {e-b:.2f} seconds")
-    b = time.perf_counter()
-    result = launch_multiprocess.launch_parallel_fixed(poly, chunks)
-    e = time.perf_counter()
-    print(f"Computation and process overhead took {e-b:.2f} seconds")
-    utils.visualize_np_array(result, "parallel_fixed.png")
+    sqrt_points_total = 6000
+    sqrt_chunks_amount = 20
+    if sqrt_points_total % sqrt_chunks_amount != 0:
+        raise ValueError("sqrt_points_total must be divisible by sqrt_chunks_amount")
+    sqrt_points_per_chunk = int(sqrt_points_total // sqrt_chunks_amount)
+    try:
+        b = time.perf_counter()
+        chunks = utils.divide_complex_space(real_lower, real_upper, img_lower, img_upper, sqrt_points_per_chunk, sqrt_chunks_amount)
+        e = time.perf_counter()
+        print(f"Dividing into chunks took {e-b:.2f} seconds")
+        b = time.perf_counter()
+        result = launch_multiprocess.launch_parallel_pool(poly, chunks, n_workers=8)
+        e = time.perf_counter()
+        print(f"Computation and process overhead took {e-b:.2f} seconds")
+        b = time.perf_counter()
+        filename = f"parallel_pool_{sqrt_points_total}.png"
+        utils.visualize_np_array(result, filename)
+        e = time.perf_counter()
+        print(f"Saved {filename}, visualization took {e-b:.2f} seconds")
+    except Exception as e:
+        print(e)

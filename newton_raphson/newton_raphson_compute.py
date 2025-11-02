@@ -20,7 +20,7 @@ def calc_newt_and_return_root_no(x: complex, poly: np_poly.Polynomial, deriv: np
 def calculate_newton_raphson(poly: np_poly.Polynomial, N: int = 500,
                              real_linspace=None, imaginary_linspace=None,
                              real_lower: int = -5, real_upper: int = 5,
-                             img_lower: int = -5, img_upper: int = 5, iterations: int = 50):
+                             img_lower: int = -5, img_upper: int = 5, iterations: int = 50, quiet = True):
     """
     Function to visualize converge of Newton-Raphson algorithm for given fragment of complex space, defined by real upper/lower
     and img lower/upper bounds or by real_linspace and imaginary_linspace.
@@ -46,7 +46,7 @@ def calculate_newton_raphson(poly: np_poly.Polynomial, N: int = 500,
     result = np.empty(shape=z_plane.shape, dtype=np.int8)
     for i, j in product(range(z_plane.shape[0]), range(z_plane.shape[1])):
         result[i,j] = calc_newt_and_return_root_no(z_plane[i, j], poly, deriv, roots, iterations=iterations)
-        if i % (z_plane.shape[0] // 10) == 0 and j == 0:
+        if i % (z_plane.shape[0] // 10) == 0 and j == 0 and quiet is False:
             print(f"{int(i / z_plane.shape[0] * 100)}|", end="")
 
     return result
