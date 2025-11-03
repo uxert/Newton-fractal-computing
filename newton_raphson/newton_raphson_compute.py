@@ -3,6 +3,7 @@ import numpy.polynomial as np_poly
 import numpy as np
 from typing import List
 from itertools import product
+import warnings
 
 from .utils import compare_with_values
 
@@ -16,6 +17,23 @@ def calc_newt_and_return_root_no(x: complex, poly: np_poly.Polynomial, deriv: np
 
     idx = compare_with_values(roots_list, root)
     return idx
+
+def calc_newt_and_return_root_no_vectorized(x: np.ndarray[complex], poly: np_poly.Polynomial, deriv: np_poly.Polynomial,
+                                 roots_list: List[complex], iterations: int = 50) -> np.ndarray[np.int8]:
+    result = np.full(x.shape, -1, dtype=np.int8)
+    x_flat = x.flatten()
+    try:
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', message=f'.*some failed to converge after {iterations} iterations.*')
+            computed_roots, _, _ = scipy.optimize.newton(poly, x0=x_flat, fprime=deriv, maxiter=iterations, full_output=True)
+        computed_roots = np.reshape(computed_roots, x.shape)
+        for idx, target_root in enumerate(roots_list):
+            mask = np.isclose(computed_roots, target_root, atol=1e-6)
+            result[mask] = idx
+    except RuntimeError as  e:
+        print(f"Vectorized Newton-Raphson failed with the following error: {e}")
+        raise
+    return result
 
 def calculate_newton_raphson(poly: np_poly.Polynomial, N: int = 500,
                              real_linspace=None, imaginary_linspace=None,
@@ -43,10 +61,6 @@ def calculate_newton_raphson(poly: np_poly.Polynomial, N: int = 500,
     re, im = np.meshgrid(imag, real)
     z_plane = re + 1j * im
 
-    result = np.empty(shape=z_plane.shape, dtype=np.int8)
-    for i, j in product(range(z_plane.shape[0]), range(z_plane.shape[1])):
-        result[i,j] = calc_newt_and_return_root_no(z_plane[i, j], poly, deriv, roots, iterations=iterations)
-        if i % (z_plane.shape[0] // 10) == 0 and j == 0 and quiet is False:
-            print(f"{int(i / z_plane.shape[0] * 100)}|", end="")
+    result = calc_newt_and_return_root_no_vectorized(z_plane, poly, deriv, roots, iterations)
 
     return result
