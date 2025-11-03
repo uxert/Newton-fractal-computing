@@ -9,9 +9,9 @@ from .utils import compare_with_values
 
 
 def calc_newt_and_return_root_no(x: complex, poly: np_poly.Polynomial, deriv: np_poly.Polynomial,
-                                 roots_list: List[complex], iterations: int = 50) -> int:
+                                 roots_list: List[complex], iterations: int = 100) -> int:
     try:
-        root = scipy.optimize.newton(poly, x0=x, fprime=deriv, maxiter=iterations)
+        root = scipy.optimize.newton(poly, x0=x, fprime=deriv, maxiter=iterations, tol=1e-12)
     except RuntimeError:
         return -1
 
@@ -19,7 +19,7 @@ def calc_newt_and_return_root_no(x: complex, poly: np_poly.Polynomial, deriv: np
     return idx
 
 def calc_newt_and_return_root_no_vectorized(x: np.ndarray[complex], poly: np_poly.Polynomial, deriv: np_poly.Polynomial,
-                                 roots_list: List[complex], iterations: int = 50) -> np.ndarray[np.int8]:
+                                 roots_list: List[complex], iterations: int = 100) -> np.ndarray[np.int8]:
     result = np.full(x.shape, -1, dtype=np.int8)
     x_flat = x.flatten()
     try:
@@ -38,7 +38,7 @@ def calc_newt_and_return_root_no_vectorized(x: np.ndarray[complex], poly: np_pol
 def calculate_newton_raphson(poly: np_poly.Polynomial, N: int = 500,
                              real_linspace=None, imaginary_linspace=None,
                              real_lower: int = -5, real_upper: int = 5,
-                             img_lower: int = -5, img_upper: int = 5, iterations: int = 50, quiet = True):
+                             img_lower: int = -5, img_upper: int = 5, iterations: int = 100, quiet = True):
     """
     Function to visualize converge of Newton-Raphson algorithm for given fragment of complex space, defined by real upper/lower
     and img lower/upper bounds or by real_linspace and imaginary_linspace.
