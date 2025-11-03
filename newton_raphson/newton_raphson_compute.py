@@ -2,7 +2,6 @@ import scipy
 import numpy.polynomial as np_poly
 import numpy as np
 from typing import List
-from itertools import product
 import warnings
 
 from .utils import compare_with_values

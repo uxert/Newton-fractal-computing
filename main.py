@@ -1,4 +1,4 @@
-from newton_raphson import newton_raphson_compute, utils, launch_multiprocess
+from newton_raphson import utils, launch_multiprocess
 import numpy.polynomial
 import time
 
@@ -27,17 +27,18 @@ if __name__ == "__main__":
         result = launch_multiprocess.launch_parallel_pool(poly, chunks, n_workers=8)
         e = time.perf_counter()
         print(f"Computation and process overhead took {e-b:.2f} seconds")
-        try:
-            b = time.perf_counter()
-            filename = f"parallel_pool_{sqrt_points_total}.tiff"
-            if result.size < 2**30:
-                utils.visualize_np_array(result, filename)
-            else:
-                print(f"Resulting array has {result.size} elements, using tifffile")
-                utils.visualize_np_array_to_tiff(result, filename)
-            e = time.perf_counter()
-            print(f"Saved {filename}, visualization took {e-b:.2f} seconds")
-        except Exception as e:
-            print(f"There was an error during visualization: {e}")
     except Exception as e:
-        print(e)
+        print(f"There was an error during computation: {e}")
+        raise
+    try:
+        b = time.perf_counter()
+        filename = f"parallel_pool_{sqrt_points_total}.tiff"
+        if result.size < 2**30:
+            utils.visualize_np_array(result, filename)
+        else:
+            print(f"Resulting array has {result.size} elements, using tifffile")
+            utils.visualize_np_array_to_tiff(result, filename)
+        e = time.perf_counter()
+        print(f"Saved {filename}, visualization took {e-b:.2f} seconds")
+    except Exception as e:
+        print(f"There was an error during visualization: {e}")
