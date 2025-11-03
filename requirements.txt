@@ -2,3 +2,4 @@ pillow
 scipy
 matplotlib
 numpy
+tqdm

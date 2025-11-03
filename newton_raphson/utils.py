@@ -5,6 +5,7 @@ from typing import List, Tuple
 import matplotlib.pyplot as plt
 from PIL import Image
 from math import sqrt
+import tifffile
 
 
 def compare_with_values(values: List[complex], x: complex, epsilon=1e-4) -> int:
@@ -23,9 +24,11 @@ def visualize_np_array(arr: np.ndarray[int], name="image.png") -> None:
     Visualizes numpy array containing non-negative integers (or value -1).
     Value -1 will always be visualized as black
     """
+    if arr.size > 2**32 - 1:
+        raise ValueError("Image array too large, PIL won't handle arrays bigger than 2**32... Use tifffile!")
     unique_vals = np.unique(arr[arr != -1])
     n_colors = len(unique_vals)
-    if n_colors > 20:
+    if n_colors > 10:
         raise ValueError(f"Too many unique values: {n_colors}. Maximum is 10 (and additionally value -1).")
 
     # unfortunately for PIL the colormap has to be RGB
@@ -43,6 +46,32 @@ def visualize_np_array(arr: np.ndarray[int], name="image.png") -> None:
     img.putpalette(palette)
     img.save(name)
 
+
+def visualize_np_array_to_tiff(arr: np.ndarray, name="image.tif") -> None:
+    """
+    Visualizes numpy array containing non-negative integers (or value -1) using tifffile.
+    Value -1 will always be visualized as black.
+    Saves as RGB TIFF image.
+    """
+    unique_vals = np.unique(arr[arr != -1])
+    n_colors = len(unique_vals)
+    if n_colors > 10:
+        raise ValueError(f"Too many unique values: {n_colors}. Maximum is 10 (and additionally value -1).")
+
+    # Create RGB image
+    rgb_img = np.zeros((*arr.shape, 3), dtype=np.uint8)
+
+    # Black for -1 (already initialized to 0)
+
+    # Apply tab10 colors
+    tab10_colors = plt.cm.tab10.colors
+    for idx, val in enumerate(unique_vals):
+        r, g, b = tab10_colors[idx]
+        mask = arr == val
+        rgb_img[mask] = [int(r * 255), int(g * 255), int(b * 255)]
+
+    # Save with tifffile
+    tifffile.imwrite(name, rgb_img, photometric='rgb')
 
 def divide_complex_space(real_lower: float, real_upper: float, img_lower: float, img_upper: float,
                          N_points: int, sqrt_N_fragments: int) -> List[Tuple]:
