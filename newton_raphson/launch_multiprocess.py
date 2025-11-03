@@ -1,4 +1,4 @@
-from multiprocessing import Process, Queue, set_start_method, Pool
+from multiprocessing import Process, Queue, set_start_method, Pool, get_start_method
 import numpy as np
 from typing import List, Tuple
 from math import sqrt
@@ -8,6 +8,9 @@ from tqdm import tqdm
 from .newton_raphson_compute import calculate_newton_raphson
 from .utils import combine_arrays_into_square
 
+if get_start_method(allow_none=True) is None:
+    set_start_method("spawn")  # Numpy and its threads go haywire when forking (which is default on UNIX, my machine)
+# spawn is slower, but much safer. And let's be honest - process management will NOT be the bottleneck here
 
 def newton_raphson_worker(mp_queue: Queue, worker_no: int, poly: np.polynomial.Polynomial, real_linspace, imaginary_linspace):
     try:
@@ -32,8 +35,6 @@ def launch_parallel_fixed(poly: np.polynomial.Polynomial, chunks: List[Tuple]) -
     if sqrt(len(chunks)) != int(sqrt(len(chunks))):
         raise ValueError(f'chunks must be square, received {len(chunks)}')
 
-    set_start_method("spawn")  # Numpy and its threads go haywire when forking (which is default on UNIX, my machine)
-    # spawn is slower, but much safer. And let's be honest - process management will NOT be the bottleneck here
 
     mp_queue = Queue()
     processes = []
@@ -70,9 +71,6 @@ def launch_parallel_pool(poly: np.polynomial.Polynomial, chunks: List[Tuple], n_
     """
     if sqrt(len(chunks)) != int(sqrt(len(chunks))):
         raise ValueError(f'chunks must be square, received {len(chunks)}')
-
-    set_start_method("spawn")  # Numpy and its threads go haywire when forking (which is default on UNIX, my machine)
-    # spawn is slower, but much safer. And let's be honest - process management will NOT be the bottleneck here
 
     # None for the Queue
     tasks = [(None, worker_no, poly, chunk[0], chunk[1])
