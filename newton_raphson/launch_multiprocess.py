@@ -1,8 +1,8 @@
 from multiprocessing import Process, Queue, set_start_method, Pool, get_start_method
+import queue
 import numpy as np
 from typing import List, Tuple
 from math import sqrt
-import sys
 from tqdm import tqdm
 
 from .newton_raphson_compute import calculate_newton_raphson
@@ -16,9 +16,13 @@ def newton_raphson_worker(mp_queue: Queue, worker_no: int, poly: np.polynomial.P
     try:
         result = calculate_newton_raphson(poly, real_linspace=real_linspace, imaginary_linspace=imaginary_linspace)
         if mp_queue is not None:
+            try:
+                mp_queue.put((worker_no, result), block=False)
+            except queue.Full:
+                print("Queue was full. This means your file-writer is not keeping up! Decrease compression")
+                # Now do blocking put if needed
+                mp_queue.put((worker_no, result), block=True)
             mp_queue.put((worker_no, result), block=True)
-            print(f"worker {worker_no} done!")
-            sys.exit(0)  # explicitely exit, this should force all numpy/BLAS threads to terminate
         return worker_no, result
     except Exception as e:
         print(f"Worker {worker_no} failed: {e}")
@@ -86,5 +90,21 @@ def launch_parallel_pool(poly: np.polynomial.Polynomial, chunks: List[Tuple], n_
     results.sort(key=lambda x: x[0])  # Sort by task id to maintain order
     results = [pair[1] for pair in results]  # after sorting leave only the arrays
     return combine_arrays_into_square(results)
+
+def launch_parallel_pool_fragment_writing(poly: np.polynomial.Polynomial, chunks: List[Tuple], queue, n_workers=4):
+    if sqrt(len(chunks)) != int(sqrt(len(chunks))):
+        raise ValueError(f'chunks must be square, received {len(chunks)}')
+
+    tasks = [(queue, worker_no, poly, chunk[0], chunk[1])
+             for worker_no, chunk in enumerate(chunks)]
+
+    with Pool(processes=n_workers) as pool:
+        # results = pool.starmap(newton_raphson_worker, tasks)
+        results = list(tqdm(pool.imap_unordered(newton_raphson_worker_wrapper, tasks, chunksize=32),
+                            total=len(tasks), desc="Calculations"))
+    queue.put(None)  # receiving None will end file writer process
+    if len(results) != len(chunks):
+        raise RuntimeError(f'Something went horribly wrong - there were {len(chunks)} chunks, but {len(results)} results came back')
+
 
 
