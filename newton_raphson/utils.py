@@ -3,6 +3,7 @@
 import numpy as np
 from typing import List, Tuple
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 from PIL import Image
 from math import sqrt
 import tifffile
@@ -58,20 +59,22 @@ def visualize_np_array_to_tiff(arr: np.ndarray, name="image.tif") -> None:
     if n_colors > 10:
         raise ValueError(f"Too many unique values: {n_colors}. Maximum is 10 (and additionally value -1).")
 
-    # Create RGB image
-    rgb_img = np.zeros((*arr.shape, 3), dtype=np.uint8)
+    cmap = cm.get_cmap("tab10")
+    # have to use np.uint16 for colormap. This is just the colormap, not the array with data which is still np.uint8
+    colormap = np.zeros((256, 3), dtype=np.uint16)
+    for i in range(1, 11):
+        rgba = cmap(i - 1)  # this uses 0-9 indexing
+        colormap[i, :] = (np.array(rgba[:3]) * 65535).astype(np.uint16)
 
-    # Black for -1 (already initialized to 0)
+    arr = arr + 1  # black becomes 0 instead of -1
+    arr = np.astype(arr, np.uint8,copy=False)
 
-    # Apply tab10 colors
-    tab10_colors = plt.cm.tab10.colors
-    for idx, val in enumerate(unique_vals):
-        r, g, b = tab10_colors[idx]
-        mask = arr == val
-        rgb_img[mask] = [int(r * 255), int(g * 255), int(b * 255)]
-
-    # Save with tifffile
-    tifffile.imwrite(name, rgb_img, photometric='rgb')
+    tifffile.imwrite(name,
+                     arr,
+                     photometric='palette',
+                     colormap=colormap.T,  # tifffile expects (3, 256)
+                     compression='lzma',
+                     bigtiff=True)
 
 def divide_complex_space(real_lower: float, real_upper: float, img_lower: float, img_upper: float,
                          N_points: int, sqrt_N_fragments: int) -> List[Tuple]:
