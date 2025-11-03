@@ -20,7 +20,7 @@ class TiledTiffWriter:
     """
 
     def __init__(self, filename, tile_queue: multiprocessing.Queue, sqrt_points_total, sqrt_tiles_amount, dtype=np.uint8,
-                 compression='adobe_deflate', compression_level=9):
+                 compression='adobe_deflate', compression_level=6):
         """
         Initialize the TiledTiffWriter.
 
@@ -71,7 +71,7 @@ class TiledTiffWriter:
             )
 
 
-    def write_one_tile(self, f, tile_no, tile_data):
+    def write_one_tile(self, dset, tile_no, tile_data):
         tile_size = self.tile_one_axis_size
         tile_row = tile_no // self.sqrt_tiles_amount
         tile_col = tile_no % self.sqrt_tiles_amount
@@ -79,7 +79,6 @@ class TiledTiffWriter:
         start_row = tile_row * tile_size
         start_col = tile_col * tile_size
 
-        dset = f[self.h5_dset_name]
         dset[start_row:start_row + tile_size,
         start_col:start_col + tile_size] = tile_data + 1  # + 1 so -1 (for black) becomes 0
 
@@ -90,13 +89,14 @@ class TiledTiffWriter:
         Thanks to magic of h5 they can be out-of-order.
         """
         with h5py.File(self.h5_filename, "r+") as f:
+            dset = f[self.h5_dset_name]
             while True:
                 item = self.tile_queue.get(block=True)
                 if item is None:
                     break
 
                 tile_no, tile_data = item
-                self.write_one_tile(f, tile_no, tile_data)
+                self.write_one_tile(dset, tile_no, tile_data)
         print("Writer process finished.")
 
     def move_h5_to_tiff(self):

@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     filename = f"parallel_pool_{sqrt_points_total}.tiff"
     manager = multiprocessing.Manager()
-    queue = manager.Queue()
+    queue = manager.Queue(maxsize=100)  # really small
     try:
         b = time.perf_counter()
         chunks = utils.divide_complex_space(real_lower, real_upper, img_lower, img_upper, sqrt_points_per_chunk, sqrt_chunks_amount)
