@@ -118,6 +118,7 @@ def launch_parallel_pool_fragment_writing(poly: np.polynomial.Polynomial, chunks
         if used_type != type(chunk[0]) or used_type != type(chunk[1]):
             raise ValueError(f'Chunk type not consistent')
 
+    print(f"[Multiprocess Launcher] Creating {len(chunks)} tasks")
     if issubclass(used_type, np.ndarray):
         tasks = [(queue, worker_no, poly, chunk[0], chunk[1])
                  for worker_no, chunk in enumerate(chunks)]
@@ -126,7 +127,7 @@ def launch_parallel_pool_fragment_writing(poly: np.polynomial.Polynomial, chunks
         imaginary_linspaces = [np.linspace(**chunk[1]) for chunk in chunks]
         tasks = [(queue, worker_no, poly, real_linspace, imag_linspace)
                  for worker_no, (real_linspace, imag_linspace) in enumerate(zip(real_linspaces, imaginary_linspaces))]
-
+    print(f"[Multiprocess Launcher] All tasks created, launching pool with {n_workers} workers")
     with Pool(processes=n_workers) as pool:
         counter = 0
         with tqdm(total=len(tasks), desc="Calculations") as pbar:

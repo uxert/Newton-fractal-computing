@@ -92,11 +92,11 @@ def divide_complex_space(real_lower: float, real_upper: float, img_lower: float,
     """
     fragments = []
     if lazy is False:
-        print("Dividing complex space using immediate evaluation.\n"
+        print("[Utils] Dividing complex space using immediate evaluation.\n"
           "Consider using lazy evaluation if you are working with big images. Around 300k X 300k is when "
           "memory footprint of returned linspaces themselves (still 1D vectors!) becomes problematic.")
     if lazy is True:
-        print("Dividing complex space using lazy evaluation.")
+        print("[Utils] Dividing complex space using lazy evaluation.")
 
     for i in range(sqrt_N_fragments):
         for j in range(sqrt_N_fragments):
@@ -147,5 +147,4 @@ def combine_arrays_into_square(results: List[np.ndarray]):
 
     # Combine into single array
     big_array = np.block(grid)
-    print(big_array.dtype)
     return big_array

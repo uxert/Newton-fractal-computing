@@ -54,12 +54,12 @@ class TiledTiffWriter:
         self.writer_process = None
         self._is_started = False
 
-        print(f"TiledTiffWriter initialized: {self.total_tiles:_} tiles ({self.sqrt_tiles_amount}x{self.sqrt_tiles_amount})\n"
+        print(f"[File writer] ttf initialized: {self.total_tiles:_} tiles ({self.sqrt_tiles_amount}x{self.sqrt_tiles_amount})\n"
               f"Compression: {self.compression} | Compression level (relevant for deflate only): {self.compression_level}\n")
 
 
     def create_h5(self, height, width):
-        print(f"Creating {height}x{width} HDF5 file")
+        print(f"[File writer] Creating {height}x{width} HDF5 file")
         with h5py.File(self.h5_filename, "w") as f:
             _ = f.create_dataset(
                 self.h5_dset_name,
@@ -97,7 +97,7 @@ class TiledTiffWriter:
 
                 tile_no, tile_data = item
                 self.write_one_tile(dset, tile_no, tile_data)
-        print("Writer process finished.")
+        print("[File writer] Writer process finished.")
 
     def move_h5_to_tiff(self):
 
@@ -111,7 +111,7 @@ class TiledTiffWriter:
             colormap[i, :] = (np.array(rgba[:3]) * 65535).astype(np.uint16)
         colormap = colormap.T
 
-        print("Beginning transfer from h5 to tiff...")
+        print("[File writer] Beginning transfer from h5 to tiff...")
         with h5py.File(self.h5_filename, "r") as f:
             dset = f[self.h5_dset_name]
             tifffile.imwrite(
@@ -124,7 +124,7 @@ class TiledTiffWriter:
                 bigtiff=True
             )
         os.remove(self.h5_filename)
-        print("Transfer complete.")
+        print("[File writer] Transfer complete.")
 
     def start(self):
         """
@@ -142,5 +142,5 @@ class TiledTiffWriter:
         self.writer_process.start()
 
         self._is_started = True
-        print("Writer process ready to receive tiles")
+        print("[File writer] Writer process ready to receive tiles")
 
