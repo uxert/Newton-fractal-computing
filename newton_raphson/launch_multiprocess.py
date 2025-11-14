@@ -22,8 +22,9 @@ def newton_raphson_worker(mp_queue: Queue, worker_no: int, poly: np.polynomial.P
                 print("Queue was full. This means your file-writer is not keeping up! Decrease compression")
                 # Now do blocking put if needed
                 mp_queue.put((worker_no, result), block=True)
-            mp_queue.put((worker_no, result), block=True)
-        return worker_no, result
+            return None
+        else:
+            return worker_no, result
     except Exception as e:
         print(f"Worker {worker_no} failed: {e}")
         if mp_queue is not None:
@@ -99,12 +100,16 @@ def launch_parallel_pool_fragment_writing(poly: np.polynomial.Polynomial, chunks
              for worker_no, chunk in enumerate(chunks)]
 
     with Pool(processes=n_workers) as pool:
-        # results = pool.starmap(newton_raphson_worker, tasks)
-        results = list(tqdm(pool.imap_unordered(newton_raphson_worker_wrapper, tasks, chunksize=32),
-                            total=len(tasks), desc="Calculations"))
+        counter = 0
+        with tqdm(total=len(tasks), desc="Calculations") as pbar:
+            # iterating through imap_unordered should immediately consume results - no need to accumulate them
+            for _ in pool.imap_unordered(newton_raphson_worker_wrapper, tasks, chunksize=32):
+                counter += 1
+                pbar.update(1)
+
     queue.put(None)  # receiving None will end file writer process
-    if len(results) != len(chunks):
-        raise RuntimeError(f'Something went horribly wrong - there were {len(chunks)} chunks, but {len(results)} results came back')
+    if counter != len(chunks):
+        raise RuntimeError(f'Something went wrong - there were {len(chunks)} chunks, but {counter} results came back')
 
 
 
