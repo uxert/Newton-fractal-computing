@@ -94,6 +94,17 @@ def launch_parallel_pool(poly: np.polynomial.Polynomial, chunks: List[Tuple], n_
     results = [pair[1] for pair in results]  # after sorting leave only the arrays
     return combine_arrays_into_square(results)
 
+def _task_generator(queue, poly, chunks, used_type):
+    if issubclass(used_type, np.ndarray):
+        for worker_no, chunk in enumerate(chunks):
+            yield queue, worker_no, poly, chunk[0], chunk[1]
+
+    if issubclass(used_type, dict):
+        for worker_no, chunk in enumerate(chunks):
+            real_linspace = np.linspace(**chunk[0])
+            imag_linspace = np.linspace(**chunk[1])
+            yield queue, worker_no, poly, real_linspace, imag_linspace
+
 def launch_parallel_pool_fragment_writing(poly: np.polynomial.Polynomial, chunks: List[Tuple], queue, n_workers=4):
     """
     :param chunks: Fragments of 2D complex space. There are 2 options. Option 1- these are Tuples with 2 elements, each
@@ -118,19 +129,13 @@ def launch_parallel_pool_fragment_writing(poly: np.polynomial.Polynomial, chunks
         if used_type != type(chunk[0]) or used_type != type(chunk[1]):
             raise ValueError(f'Chunk type not consistent')
 
-    print(f"[Multiprocess Launcher] Creating {len(chunks)} tasks")
-    if issubclass(used_type, np.ndarray):
-        tasks = [(queue, worker_no, poly, chunk[0], chunk[1])
-                 for worker_no, chunk in enumerate(chunks)]
-    if issubclass(used_type, dict):
-        real_linspaces = [np.linspace(**chunk[0]) for chunk in chunks]
-        imaginary_linspaces = [np.linspace(**chunk[1]) for chunk in chunks]
-        tasks = [(queue, worker_no, poly, real_linspace, imag_linspace)
-                 for worker_no, (real_linspace, imag_linspace) in enumerate(zip(real_linspaces, imaginary_linspaces))]
-    print(f"[Multiprocess Launcher] All tasks created, launching pool with {n_workers} workers")
+    print(f"[Multiprocess Launcher] using generator to generate tasks on the fly - total expected task amount: {len(chunks):_}")
+    tasks = _task_generator(queue, poly, chunks, used_type)
+    print(f"[Multiprocess Launcher] Launching pool with {n_workers} workers")
+
     with Pool(processes=n_workers) as pool:
         counter = 0
-        with tqdm(total=len(tasks), desc="Calculations") as pbar:
+        with tqdm(total=len(chunks), desc="Calculations") as pbar:
             # iterating through imap_unordered should immediately consume results - no need to accumulate them
             for _ in pool.imap_unordered(newton_raphson_worker_wrapper, tasks, chunksize=32):
                 counter += 1
