@@ -72,6 +72,8 @@ def launch_parallel_pool(poly: np.polynomial.Polynomial, chunks: List[Tuple], n_
     """
     Takes list of chunks and launches them in parallel using multiprocessing pool executor.
     Allows for better load balancing.
+    Chunks need to be linspaces (this doesn't, and will not, allow for lazy chunking) - without using tiled writer your
+    machine RAM will end long before you even notice memory footprint of calculating all chunks at once.
 
     """
     if sqrt(len(chunks)) != int(sqrt(len(chunks))):
@@ -93,11 +95,37 @@ def launch_parallel_pool(poly: np.polynomial.Polynomial, chunks: List[Tuple], n_
     return combine_arrays_into_square(results)
 
 def launch_parallel_pool_fragment_writing(poly: np.polynomial.Polynomial, chunks: List[Tuple], queue, n_workers=4):
+    """
+    :param chunks: Fragments of 2D complex space. There are 2 options. Option 1- these are Tuples with 2 elements, each
+        is already computed linspace. Option 2 - these are tuples with 2 elements, each a dictionary with kwargs that are
+        to be passed to np.linspace().  Option 2 is recommended as it allows to not compute (and store in memory) the
+        linspaces until they are needed.
+    :param queue: multiprocess Queue that will link producers (newton_raphson_worker) with consumer (tiled writer)
+    :param n_workers: Amount of workers to spawn. Remember to always leave some CPU for writer process!
+    :raises ValueError: If chunks are not in recognized format (described in this doc).
+    :return:
+    """
     if sqrt(len(chunks)) != int(sqrt(len(chunks))):
-        raise ValueError(f'chunks must be square, received {len(chunks)}')
+        raise ValueError(f'Amount of chunks must be square, received {len(chunks)}')
+    used_type = type(chunks[0][0])
+    if not issubclass(used_type, (dict, np.ndarray)):
+        raise ValueError(f'chunks need to be either linspaces or dictionaries with kwargs, got {type(chunks[0][0])}')
+    for chunk in chunks:
+        if not isinstance(chunk, tuple):
+            raise ValueError(f'Each chunk must be a tuple, received {type(chunk)}')
+        if len(chunk) != 2:
+            raise ValueError(f'Each chunk must be a tuple with 2 elements, received {len(chunk)}')
+        if used_type != type(chunk[0]) or used_type != type(chunk[1]):
+            raise ValueError(f'Chunk type not consistent')
 
-    tasks = [(queue, worker_no, poly, chunk[0], chunk[1])
-             for worker_no, chunk in enumerate(chunks)]
+    if issubclass(used_type, np.ndarray):
+        tasks = [(queue, worker_no, poly, chunk[0], chunk[1])
+                 for worker_no, chunk in enumerate(chunks)]
+    if issubclass(used_type, dict):
+        real_linspaces = [np.linspace(**chunk[0]) for chunk in chunks]
+        imaginary_linspaces = [np.linspace(**chunk[1]) for chunk in chunks]
+        tasks = [(queue, worker_no, poly, real_linspace, imag_linspace)
+                 for worker_no, (real_linspace, imag_linspace) in enumerate(zip(real_linspaces, imaginary_linspaces))]
 
     with Pool(processes=n_workers) as pool:
         counter = 0

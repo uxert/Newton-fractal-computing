@@ -77,15 +77,26 @@ def visualize_np_array_to_tiff(arr: np.ndarray, name="image.tif") -> None:
                      bigtiff=True)
 
 def divide_complex_space(real_lower: float, real_upper: float, img_lower: float, img_upper: float,
-                         N_points: int, sqrt_N_fragments: int) -> List[Tuple]:
+                         N_points: int, sqrt_N_fragments: int, lazy=False) -> List[Tuple]:
     """
     Divide 2D complex space into chunks for parallel computation. The space will always be divided into "square" amount of chunks
     so that they can be later nicely aligned with np.block()
-    N_points is number of points PER FRAGMENT. So in total there will be N_points * sqrt_N_fragments**2 points!
+    :param N_points: is number of points PER FRAGMENT. So in total there will be N_points * sqrt_N_fragments**2 points!
     N_points is the value that one worker will receive at a time
-    :returns: List of tuples, each tuple has two ndarrays - first one representing real numbers, second one representing imaginary numbers
+    :param lazy: allows to control whether it calculates and returns linspaces, or arguments that need to be later passed to np.linspace()
+    :returns: IF NOT LAZY: List of tuples, each tuple has two ndarrays - first one representing real numbers,
+        second one representing imaginary numbers.
+        IF LAZY: List of nested tuples. Each tuple has two elements - one for real numbers and one for imaginary numbers.
+        Each element is a dict of keyword arguments, that need to be passed to np.linspace().
+        Hint - pass them via unpacking with ** operator.
     """
     fragments = []
+    if lazy is False:
+        print("Dividing complex space using immediate evaluation.\n"
+          "Consider using lazy evaluation if you are working with big images. Around 300k X 300k is when "
+          "memory footprint of returned linspaces themselves (still 1D vectors!) becomes problematic.")
+    if lazy is True:
+        print("Dividing complex space using lazy evaluation.")
 
     for i in range(sqrt_N_fragments):
         for j in range(sqrt_N_fragments):
@@ -96,12 +107,20 @@ def divide_complex_space(real_lower: float, real_upper: float, img_lower: float,
             img_start = img_lower + j * (img_upper - img_lower) / sqrt_N_fragments
             img_end = img_lower + (j + 1) * (img_upper - img_lower) / sqrt_N_fragments
 
-            # Create linspaces for this fragment
-            # watch for endpoint=False, otherwise the chunks will overlap
-            real_linspace = np.linspace(real_start, real_end, N_points, endpoint=False)
-            img_linspace = np.linspace(img_start, img_end, N_points, endpoint=False)
+            if lazy is False:
+                # Create linspaces for this fragment
+                # watch for endpoint=False, otherwise the chunks will overlap
+                real_linspace = np.linspace(real_start, real_end, N_points, endpoint=False)
+                img_linspace = np.linspace(img_start, img_end, N_points, endpoint=False)
 
-            fragments.append((real_linspace, img_linspace))
+                fragments.append((real_linspace, img_linspace))
+
+            if lazy is True:
+                # watch for endpoint=False, otherwise the chunks will overlap
+                real_args = {"start": real_start, "stop": real_end, "num": N_points, "endpoint": False}
+                img_args = {"start": img_start, "stop": img_end, "num": N_points, "endpoint": False}
+
+                fragments.append((real_args, img_args))
 
     return fragments
 
