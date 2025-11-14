@@ -10,7 +10,7 @@ import sys
 import os
 
 
-class TiledTiffWriter:
+class TiledFileWriter:
     """
     A class for writing large files tile-by-tile with compression.
     It compresses the file on-the-fly and writes to disk directly.

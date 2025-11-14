@@ -1,4 +1,4 @@
-from newton_raphson import utils, launch_multiprocess, tiled_tiff_writer
+from newton_raphson import utils, launch_multiprocess, tiled_file_writer
 import numpy.polynomial
 import time
 import multiprocessing
