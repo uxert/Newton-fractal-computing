@@ -31,7 +31,7 @@ def calc_newt_and_return_root_no_vectorized(x: np.ndarray[complex], poly: np_pol
             result[mask] = idx
     except RuntimeError as  e:
         print(f"Vectorized Newton-Raphson failed with the following error: {e}")
-        raise
+        result = np.full(x.shape, -1, dtype=np.int8)
     return result
 
 def calculate_newton_raphson(poly: np_poly.Polynomial, N: int = 500,

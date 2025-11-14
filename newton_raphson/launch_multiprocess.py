@@ -1,22 +1,30 @@
-from multiprocessing import Process, Queue, set_start_method, Pool
+from multiprocessing import Process, Queue, set_start_method, Pool, get_start_method
+import queue
 import numpy as np
 from typing import List, Tuple
 from math import sqrt
-import sys
 from tqdm import tqdm
 
 from .newton_raphson_compute import calculate_newton_raphson
 from .utils import combine_arrays_into_square
 
+if get_start_method(allow_none=True) is None:
+    set_start_method("spawn")  # Numpy and its threads go haywire when forking (which is default on UNIX, my machine)
+# spawn is slower, but much safer. And let's be honest - process management will NOT be the bottleneck here
 
 def newton_raphson_worker(mp_queue: Queue, worker_no: int, poly: np.polynomial.Polynomial, real_linspace, imaginary_linspace):
     try:
         result = calculate_newton_raphson(poly, real_linspace=real_linspace, imaginary_linspace=imaginary_linspace)
         if mp_queue is not None:
-            mp_queue.put((worker_no, result), block=True)
-            print(f"worker {worker_no} done!")
-            sys.exit(0)  # explicitely exit, this should force all numpy/BLAS threads to terminate
-        return worker_no, result
+            try:
+                mp_queue.put((worker_no, result), block=False)
+            except queue.Full:
+                print("Queue was full. This means your file-writer is not keeping up! Decrease compression")
+                # Now do blocking put if needed
+                mp_queue.put((worker_no, result), block=True)
+            return None
+        else:
+            return worker_no, result
     except Exception as e:
         print(f"Worker {worker_no} failed: {e}")
         if mp_queue is not None:
@@ -32,8 +40,6 @@ def launch_parallel_fixed(poly: np.polynomial.Polynomial, chunks: List[Tuple]) -
     if sqrt(len(chunks)) != int(sqrt(len(chunks))):
         raise ValueError(f'chunks must be square, received {len(chunks)}')
 
-    set_start_method("spawn")  # Numpy and its threads go haywire when forking (which is default on UNIX, my machine)
-    # spawn is slower, but much safer. And let's be honest - process management will NOT be the bottleneck here
 
     mp_queue = Queue()
     processes = []
@@ -66,13 +72,12 @@ def launch_parallel_pool(poly: np.polynomial.Polynomial, chunks: List[Tuple], n_
     """
     Takes list of chunks and launches them in parallel using multiprocessing pool executor.
     Allows for better load balancing.
+    Chunks need to be linspaces (this doesn't, and will not, allow for lazy chunking) - without using tiled writer your
+    machine RAM will end long before you even notice memory footprint of calculating all chunks at once.
 
     """
     if sqrt(len(chunks)) != int(sqrt(len(chunks))):
         raise ValueError(f'chunks must be square, received {len(chunks)}')
-
-    set_start_method("spawn")  # Numpy and its threads go haywire when forking (which is default on UNIX, my machine)
-    # spawn is slower, but much safer. And let's be honest - process management will NOT be the bottleneck here
 
     # None for the Queue
     tasks = [(None, worker_no, poly, chunk[0], chunk[1])
@@ -88,5 +93,57 @@ def launch_parallel_pool(poly: np.polynomial.Polynomial, chunks: List[Tuple], n_
     results.sort(key=lambda x: x[0])  # Sort by task id to maintain order
     results = [pair[1] for pair in results]  # after sorting leave only the arrays
     return combine_arrays_into_square(results)
+
+def _task_generator(queue, poly, chunks, used_type):
+    if issubclass(used_type, np.ndarray):
+        for worker_no, chunk in enumerate(chunks):
+            yield queue, worker_no, poly, chunk[0], chunk[1]
+
+    if issubclass(used_type, dict):
+        for worker_no, chunk in enumerate(chunks):
+            real_linspace = np.linspace(**chunk[0])
+            imag_linspace = np.linspace(**chunk[1])
+            yield queue, worker_no, poly, real_linspace, imag_linspace
+
+def launch_parallel_pool_fragment_writing(poly: np.polynomial.Polynomial, chunks: List[Tuple], queue, n_workers=4):
+    """
+    :param chunks: Fragments of 2D complex space. There are 2 options. Option 1- these are Tuples with 2 elements, each
+        is already computed linspace. Option 2 - these are tuples with 2 elements, each a dictionary with kwargs that are
+        to be passed to np.linspace().  Option 2 is recommended as it allows to not compute (and store in memory) the
+        linspaces until they are needed.
+    :param queue: multiprocess Queue that will link producers (newton_raphson_worker) with consumer (tiled writer)
+    :param n_workers: Amount of workers to spawn. Remember to always leave some CPU for writer process!
+    :raises ValueError: If chunks are not in recognized format (described in this doc).
+    :return:
+    """
+    if sqrt(len(chunks)) != int(sqrt(len(chunks))):
+        raise ValueError(f'Amount of chunks must be square, received {len(chunks)}')
+    used_type = type(chunks[0][0])
+    if not issubclass(used_type, (dict, np.ndarray)):
+        raise ValueError(f'chunks need to be either linspaces or dictionaries with kwargs, got {type(chunks[0][0])}')
+    for chunk in chunks:
+        if not isinstance(chunk, tuple):
+            raise ValueError(f'Each chunk must be a tuple, received {type(chunk)}')
+        if len(chunk) != 2:
+            raise ValueError(f'Each chunk must be a tuple with 2 elements, received {len(chunk)}')
+        if used_type != type(chunk[0]) or used_type != type(chunk[1]):
+            raise ValueError(f'Chunk type not consistent')
+
+    print(f"[Multiprocess Launcher] using generator to generate tasks on the fly - total expected task amount: {len(chunks):_}")
+    tasks = _task_generator(queue, poly, chunks, used_type)
+    print(f"[Multiprocess Launcher] Launching pool with {n_workers} workers")
+
+    with Pool(processes=n_workers) as pool:
+        counter = 0
+        with tqdm(total=len(chunks), desc="Calculations") as pbar:
+            # iterating through imap_unordered should immediately consume results - no need to accumulate them
+            for _ in pool.imap_unordered(newton_raphson_worker_wrapper, tasks, chunksize=32):
+                counter += 1
+                pbar.update(1)
+
+    queue.put(None)  # receiving None will end file writer process
+    if counter != len(chunks):
+        raise RuntimeError(f'Something went wrong - there were {len(chunks)} chunks, but {counter} results came back')
+
 
 
