@@ -38,4 +38,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"There was an error during computation: {e}")
         raise
-    ttf.move_h5_to_tiff()
+    # files bigger than 100k X 100k are not handled by tiffs that well and should be changed to deep zoom.
+    # for that working on the compressed .h5 file is recommended
+    if sqrt_points_total < 100_000:
+        ttf.move_h5_to_tiff()

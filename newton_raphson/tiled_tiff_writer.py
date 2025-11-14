@@ -20,7 +20,7 @@ class TiledTiffWriter:
     """
 
     def __init__(self, filename, tile_queue: multiprocessing.Queue, sqrt_points_total, sqrt_tiles_amount, dtype=np.uint8,
-                 compression='adobe_deflate', compression_level=6):
+                 compression='adobe_deflate', compression_level=9):
         """
         Initialize the TiledTiffWriter.
 
@@ -37,7 +37,7 @@ class TiledTiffWriter:
             raise ValueError("sqrt_points_total must be divisible by sqrt_tiles_amount")
 
         self.filename = filename
-        self.h5_filename = f"{uuid.uuid4()}-temp.h5"
+        self.h5_filename = f"{sqrt_points_total}-{uuid.uuid4()}.h5"
         self.h5_dset_name = "dset"
         self.sqrt_points_total = sqrt_points_total
         self.sqrt_tiles_amount = sqrt_tiles_amount
