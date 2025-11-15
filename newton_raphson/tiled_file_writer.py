@@ -8,6 +8,8 @@ import matplotlib.cm as cm
 import uuid
 import sys
 import os
+import pika
+import pickle
 
 
 class TiledFileWriter:
@@ -20,7 +22,7 @@ class TiledFileWriter:
     """
 
     def __init__(self, filename, tile_queue: multiprocessing.Queue, sqrt_points_total, sqrt_tiles_amount, dtype=np.uint8,
-                 compression='adobe_deflate', compression_level=9):
+                 compression='adobe_deflate', compression_level=9, distributed=False):
         """
         Initialize the TiledTiffWriter.
 
@@ -45,6 +47,7 @@ class TiledFileWriter:
         self.dtype = dtype
         self.compression = compression
         self.compression_level = compression_level
+        self.distributed = distributed
 
 
         self.total_tiles = sqrt_tiles_amount ** 2
@@ -88,15 +91,63 @@ class TiledFileWriter:
         Keeps the h5 file open and writes fragments as they arrive.
         Thanks to magic of h5 they can be out-of-order.
         """
-        with h5py.File(self.h5_filename, "r+") as f:
-            dset = f[self.h5_dset_name]
-            while True:
-                item = self.tile_queue.get(block=True)
-                if item is None:
-                    break
+        if self.distributed is False:
+            with h5py.File(self.h5_filename, "r+") as f:
+                dset = f[self.h5_dset_name]
+                while True:
+                    item = self.tile_queue.get(block=True)
+                    if item is None:
+                        break
 
-                tile_no, tile_data = item
-                self.write_one_tile(dset, tile_no, tile_data)
+                    tile_no, tile_data = item
+                    self.write_one_tile(dset, tile_no, tile_data)
+        else:
+            # 1. Połącz się z RabbitMQ i zadbaj o kolejkę
+            print("[File writer] Establishing rabbit queue with tiles")
+            amqp_url = "amqp://guest:guest@localhost:5672/%2F"
+            queue_name = "tiles"
+            connection = pika.BlockingConnection(pika.URLParameters(amqp_url))
+            channel = connection.channel()
+            channel.queue_declare(queue=queue_name, durable=True)
+            channel.basic_qos(prefetch_count=1)  # jeden tile naraz
+
+            counter = 0
+            with h5py.File(self.h5_filename, "r+") as f:
+                dset = f[self.h5_dset_name]
+
+                # 2. Prosta pętla konsumująca – odpowiednik while True + queue.get()
+                for method_frame, properties, body in channel.consume(
+                        queue=queue_name,
+                        inactivity_timeout=None  # blokuj aż przyjdzie wiadomość
+                ):
+                    # W teorii inactivity_timeout=None => nie będzie None,
+                    # ale ostrożność nie zaszkodzi.
+                    if method_frame is None:
+                        continue
+
+                    item = pickle.loads(body)
+
+                    # Sygnał końca – zachowanie jak dla item is None w Queue
+                    if item is None:
+                        channel.basic_ack(method_frame.delivery_tag)
+                        break
+                    counter += 1
+                    tile_no, tile_data = item
+                    print(f"[File writer] Received tile to write. Tile no: {tile_no}")
+
+                    self.write_one_tile(dset, tile_no, tile_data)
+
+                    # Potwierdź przetworzenie
+                    channel.basic_ack(method_frame.delivery_tag)
+
+                    if counter == self.total_tiles:
+                        print(f"[File writer] Received {counter} out of total {self.total_tiles} tasks - ending.")
+                        break
+                # kończymy konsumpcję
+                channel.cancel()
+
+            connection.close()
+
         print("[File writer] Writer process finished.")
 
     def move_h5_to_tiff(self):
