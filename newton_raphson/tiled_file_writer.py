@@ -101,7 +101,7 @@ class TiledFileWriter:
 
     def move_h5_to_tiff(self):
 
-        print("Waiting for writer process to finish...")
+        print("[File writer] Waiting for writer process to finish...")
         self.writer_process.join()
         cmap = cm.get_cmap("tab10")
         # have to use np.uint16 for colormap. This is just the colormap, not the array with data which is still np.uint8
