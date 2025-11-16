@@ -3,13 +3,13 @@ import multiprocessing
 import h5py
 import tifffile
 import numpy as np
-from multiprocessing import Process, Queue
+from multiprocessing import Process
 import matplotlib.cm as cm
 import uuid
-import sys
 import os
 import pika
 import pickle
+from constants import amqp_url
 
 
 class TiledFileWriter:
@@ -104,7 +104,6 @@ class TiledFileWriter:
         else:
             # 1. Połącz się z RabbitMQ i zadbaj o kolejkę
             print("[File writer] Establishing rabbit queue with tiles")
-            amqp_url = "amqp://guest:guest@localhost:5672/%2F"
             queue_name = "tiles"
             connection = pika.BlockingConnection(pika.URLParameters(amqp_url))
             channel = connection.channel()

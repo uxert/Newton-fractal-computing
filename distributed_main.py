@@ -4,6 +4,7 @@ import numpy.polynomial
 import time
 import pika
 import pickle
+from constants import amqp_url
 
 
 def _task_generator(poly, chunks):
@@ -21,7 +22,7 @@ sqrt_points_total = 200
 sqrt_chunks_amount = 20
 polynomial_coefficients=(-16,0,0,0,15,0,0,0,1)
 n_workers = 7
-amqp_url: str = "amqp://guest:guest@localhost:5672/%2F"
+
 
 if __name__ == "__main__":
     poly = numpy.polynomial.Polynomial(coef=polynomial_coefficients)

@@ -1,12 +1,11 @@
-import numpy as np
 import pickle
 import pika
+from constants import amqp_url
 
 from newton_raphson.newton_raphson_compute import calculate_newton_raphson
 
 
 def start_newton_raphson_worker(
-        amqp_url: str = "amqp://guest:guest@localhost:5672/%2F",
         tasks_queue: str = "tasks",
         tiles_queue: str = "tiles",
 ):
