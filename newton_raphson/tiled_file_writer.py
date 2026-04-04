@@ -1,14 +1,15 @@
 import multiprocessing
+import os
+import pickle
+import uuid
+from multiprocessing import Process
 
 import h5py
-import tifffile
-import numpy as np
-from multiprocessing import Process
 import matplotlib.cm as cm
-import uuid
-import os
+import numpy as np
 import pika
-import pickle
+import tifffile
+
 from constants import amqp_url
 
 
