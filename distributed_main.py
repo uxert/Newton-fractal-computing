@@ -1,10 +1,15 @@
-import numpy as np
-from newton_raphson import utils, launch_multiprocess, tiled_file_writer
-import numpy.polynomial
-import time
-import pika
 import pickle
+import time
+
+import numpy as np
+import numpy.polynomial
+import pika
+
 from constants import amqp_url
+from newton_raphson import (
+    tiled_file_writer,
+    utils,
+)
 
 
 def _task_generator(poly, chunks):
@@ -42,9 +47,9 @@ if __name__ == "__main__":
     connection = pika.BlockingConnection(pika.URLParameters(amqp_url))
     channel = connection.channel()
 
-    # Upewniamy się, że kolejki istnieją
+    # Ensure the queue exists
     channel.queue_declare(queue="tasks", durable=True)
-    # Jeden task na raz na worker
+
     channel.basic_qos(prefetch_count=1)
 
     ttf = tiled_file_writer.TiledFileWriter(filename, None, sqrt_points_total, sqrt_chunks_amount, distributed=True)
@@ -55,7 +60,7 @@ if __name__ == "__main__":
             exchange="",
             routing_key="tasks",
             body=pickle.dumps(task),
-            properties=pika.BasicProperties(delivery_mode=2),  # trwała wiadomość
+            properties=pika.BasicProperties(delivery_mode=2),  # delivery_mode=2 means persistent message
         )
     e = time.perf_counter()
     print(f"[Main] Sending tasks to rabbit queue took {e-b:.2f} seconds")
