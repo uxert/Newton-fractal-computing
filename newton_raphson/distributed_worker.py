@@ -1,10 +1,12 @@
+import logging
 import pickle
-import pika
-from constants import amqp_url
 
+import pika
+from pika.exceptions import AMQPConnectionError
+
+from constants import amqp_url
 from .newton_raphson_compute import calculate_newton_raphson
 
-import logging
 
 # hardcoded so that logging sets up correctly even when launching this module directly (gets name __main__ then)
 logger = logging.getLogger("newton_raphson.distributed_worker")
@@ -20,8 +22,12 @@ def start_newton_raphson_worker(
     3. puts results to `tiles` queue
     """
 
-    connection = pika.BlockingConnection(pika.URLParameters(amqp_url))
-    channel = connection.channel()
+    try:
+        connection = pika.BlockingConnection(pika.URLParameters(amqp_url))
+        channel = connection.channel()
+    except AMQPConnectionError as e:
+        logger.error(f"AMQPConnectionError when connecting to pika: {str(e)}")
+        return
 
     # ensure queues exist
     channel.queue_declare(queue=tasks_queue, durable=True)

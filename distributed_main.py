@@ -4,6 +4,7 @@ import time
 import numpy as np
 import numpy.polynomial
 import pika
+from pika.exceptions import AMQPConnectionError
 
 from constants import amqp_url
 from newton_raphson import (
@@ -44,6 +45,15 @@ if __name__ == "__main__":
     e = time.perf_counter()
     print(f"[Main] Dividing into chunks took {e-b:.2f} seconds")
     tasks = _task_generator(poly, chunks)
+
+    try:
+        connection = pika.BlockingConnection(pika.URLParameters(amqp_url))
+        channel = connection.channel()
+    except AMQPConnectionError as e:
+        print(f"[Main]AMQPConnectionError when connecting to pika: {str(e)}")
+        exit(0)
+
+
     connection = pika.BlockingConnection(pika.URLParameters(amqp_url))
     channel = connection.channel()
 
