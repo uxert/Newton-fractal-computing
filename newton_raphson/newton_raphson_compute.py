@@ -1,14 +1,24 @@
-import scipy
-import numpy.polynomial as np_poly
-import numpy as np
-from typing import List
+import logging
 import warnings
+from typing import List
+
+import numpy as np
+import numpy.polynomial as np_poly
+import scipy
+
+
+logger = logging.getLogger(__name__)
 
 from .utils import compare_with_values
 
 
-def calc_newt_and_return_root_no(x: complex, poly: np_poly.Polynomial, deriv: np_poly.Polynomial,
-                                 roots_list: List[complex], iterations: int = 100) -> int:
+def calc_newt_and_return_root_no(
+        x: complex,
+        poly: np_poly.Polynomial,
+        deriv: np_poly.Polynomial,
+        roots_list: List[complex],
+        iterations: int = 100,
+) -> int:
     try:
         root = scipy.optimize.newton(poly, x0=x, fprime=deriv, maxiter=iterations, tol=1e-12)
     except RuntimeError:
@@ -17,8 +27,14 @@ def calc_newt_and_return_root_no(x: complex, poly: np_poly.Polynomial, deriv: np
     idx = compare_with_values(roots_list, root)
     return idx
 
-def calc_newt_and_return_root_no_vectorized(x: np.ndarray[complex], poly: np_poly.Polynomial, deriv: np_poly.Polynomial,
-                                 roots_list: List[complex], iterations: int = 100) -> np.ndarray[np.int8]:
+
+def calc_newt_and_return_root_no_vectorized(
+        x: np.ndarray[complex],
+        poly: np_poly.Polynomial,
+        deriv: np_poly.Polynomial,
+        roots_list: List[complex],
+        iterations: int = 100,
+) -> np.ndarray[np.int8]:
     result = np.full(x.shape, -1, dtype=np.int8)
     x_flat = x.flatten()
     try:
@@ -29,19 +45,27 @@ def calc_newt_and_return_root_no_vectorized(x: np.ndarray[complex], poly: np_pol
         for idx, target_root in enumerate(roots_list):
             mask = np.isclose(computed_roots, target_root, atol=1e-6)
             result[mask] = idx
-    except RuntimeError as  e:
+    except RuntimeError as e:
         # ignore this case silently and just fill the result with -1
         if str(e) == f"all failed to converge after {iterations} iterations":
             result = np.full(x.shape, -1, dtype=np.int8)
         else:
-            print(f"Vectorized Newton-Raphson failed with the following error: {e}")
+            logger.error(f"Vectorized Newton-Raphson failed with the following error: {e}")
             raise e
     return result
 
-def calculate_newton_raphson(poly: np_poly.Polynomial, N: int = 500,
-                             real_linspace=None, imaginary_linspace=None,
-                             real_lower: int = -5, real_upper: int = 5,
-                             img_lower: int = -5, img_upper: int = 5, iterations: int = 100, quiet = True):
+
+def calculate_newton_raphson(
+        poly: np_poly.Polynomial,
+        N: int = 500,
+        real_linspace=None,
+        imaginary_linspace=None,
+        real_lower: int = -5,
+        real_upper: int = 5,
+        img_lower: int = -5,
+        img_upper: int = 5,
+        iterations: int = 100,
+        quiet=True, ):
     """
     Function to visualize converge of Newton-Raphson algorithm for given fragment of complex space, defined by real upper/lower
     and img lower/upper bounds or by real_linspace and imaginary_linspace.

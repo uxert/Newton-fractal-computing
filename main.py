@@ -1,7 +1,14 @@
-from newton_raphson import utils, launch_multiprocess, tiled_file_writer
-import numpy.polynomial
-import time
 import multiprocessing
+import time
+
+import numpy.polynomial
+
+from newton_raphson import (
+    launch_multiprocess,
+    tiled_file_writer,
+    utils,
+)
+
 
 real_upper = 10
 real_lower = - real_upper

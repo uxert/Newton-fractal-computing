@@ -7,6 +7,9 @@ from multiprocessing import Process
 
 import h5py
 import matplotlib.cm as cm
+
+
+logger = logging.getLogger(__name__)
 import numpy as np
 import pika
 import tifffile
@@ -69,20 +72,21 @@ class TiledFileWriter:
         self.writer_process = None
         self._is_started = False
 
-        logger.info(f"ttf initialized: {self.total_tiles:_} tiles ({self.sqrt_tiles_amount}x{self.sqrt_tiles_amount})\n"
-              f"Compression: {self.compression} | Compression level (relevant for deflate only): {self.compression_level}\n")
-
+        logger.info(
+            f"ttf initialized: {self.total_tiles:_} tiles ({self.sqrt_tiles_amount}x{self.sqrt_tiles_amount})\n"
+            f"Compression: {self.compression} | Compression level (relevant for deflate only): {self.compression_level}\n",
+        )
 
     def create_h5(self, height, width):
         logger.info(f"Creating {height}x{width} HDF5 file")
         with h5py.File(self.h5_filename, "w") as f:
             _ = f.create_dataset(
                 self.h5_dset_name,
-                shape=(height, width ),
+                shape=(height, width),
                 dtype='uint8',
                 chunks=(128, 128),  # chunk size for efficient access
                 compression='gzip',
-                compression_opts=self.compression_level  # compression level (1-9)
+                compression_opts=self.compression_level,  # compression level (1-9)
             )
 
     def write_one_tile(self, dset, tile_no, tile_data):

@@ -1,12 +1,20 @@
 """This module contains things that are used by rest of the package"""
 
-import numpy as np
-from typing import List, Tuple
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-from PIL import Image
+import logging
 from math import sqrt
+from typing import (
+    List,
+    Tuple,
+)
+
+import matplotlib.cm as cm
+import matplotlib.pyplot as plt
+import numpy as np
 import tifffile
+from PIL import Image
+
+
+logger = logging.getLogger(__name__)
 
 
 def compare_with_values(values: List[complex], x: complex, epsilon=1e-4) -> int:
@@ -92,11 +100,11 @@ def divide_complex_space(real_lower: float, real_upper: float, img_lower: float,
     """
     fragments = []
     if lazy is False:
-        print("[Utils] Dividing complex space using immediate evaluation.\n"
+        logger.info("Dividing complex space using immediate evaluation.\n"
           "Consider using lazy evaluation if you are working with big images. Around 300k X 300k is when "
           "memory footprint of returned linspaces themselves (still 1D vectors!) becomes problematic.")
     if lazy is True:
-        print("[Utils] Dividing complex space using lazy evaluation.")
+        logger.info("Dividing complex space using lazy evaluation.")
 
     for i in range(sqrt_N_fragments):
         for j in range(sqrt_N_fragments):
