@@ -2,7 +2,7 @@ import pickle
 import pika
 from constants import amqp_url
 
-from newton_raphson.newton_raphson_compute import calculate_newton_raphson
+from .newton_raphson_compute import calculate_newton_raphson
 
 import logging
 
