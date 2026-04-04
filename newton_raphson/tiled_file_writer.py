@@ -1,13 +1,20 @@
 import logging
 import multiprocessing
 import os
+import pickle
 import uuid
 from multiprocessing import Process
 
 import h5py
 import matplotlib.cm as cm
+
+
+logger = logging.getLogger(__name__)
 import numpy as np
+import pika
 import tifffile
+
+from constants import amqp_url
 
 
 logger = logging.getLogger(__name__)
@@ -31,7 +38,7 @@ class TiledFileWriter:
             dtype=np.uint8,
             compression='adobe_deflate',
             compression_level=9,
-    ):
+            distributed=False, ):
         """
         Initialize the TiledTiffWriter.
 
@@ -56,6 +63,7 @@ class TiledFileWriter:
         self.dtype = dtype
         self.compression = compression
         self.compression_level = compression_level
+        self.distributed = distributed
 
         self.total_tiles = sqrt_tiles_amount ** 2
 
@@ -98,15 +106,62 @@ class TiledFileWriter:
         Keeps the h5 file open and writes fragments as they arrive.
         Thanks to magic of h5 they can be out-of-order.
         """
-        with h5py.File(self.h5_filename, "r+") as f:
-            dset = f[self.h5_dset_name]
-            while True:
-                item = self.tile_queue.get(block=True)
-                if item is None:
-                    break
+        if self.distributed is False:
+            with h5py.File(self.h5_filename, "r+") as f:
+                dset = f[self.h5_dset_name]
+                while True:
+                    item = self.tile_queue.get(block=True)
+                    if item is None:
+                        break
 
-                tile_no, tile_data = item
-                self.write_one_tile(dset, tile_no, tile_data)
+                    tile_no, tile_data = item
+                    self.write_one_tile(dset, tile_no, tile_data)
+        else:
+            # 1. Połącz się z RabbitMQ i zadbaj o kolejkę
+            logger.info("Establishing rabbit queue with tiles")
+            queue_name = "tiles"
+            connection = pika.BlockingConnection(pika.URLParameters(amqp_url))
+            channel = connection.channel()
+            channel.queue_declare(queue=queue_name, durable=True)
+            channel.basic_qos(prefetch_count=1)  # jeden tile naraz
+
+            counter = 0
+            with h5py.File(self.h5_filename, "r+") as f:
+                dset = f[self.h5_dset_name]
+
+                # 2. Prosta pętla konsumująca – odpowiednik while True + queue.get()
+                for method_frame, properties, body in channel.consume(
+                        queue=queue_name,
+                        inactivity_timeout=None,  # blokuj aż przyjdzie wiadomość
+                ):
+                    # W teorii inactivity_timeout=None => nie będzie None,
+                    # ale ostrożność nie zaszkodzi.
+                    if method_frame is None:
+                        continue
+
+                    item = pickle.loads(body)
+
+                    # Sygnał końca – zachowanie jak dla item is None w Queue
+                    if item is None:
+                        channel.basic_ack(method_frame.delivery_tag)
+                        break
+                    counter += 1
+                    tile_no, tile_data = item
+                    logger.info(f"Received tile to write. Tile no: {tile_no}")
+
+                    self.write_one_tile(dset, tile_no, tile_data)
+
+                    # Potwierdź przetworzenie
+                    channel.basic_ack(method_frame.delivery_tag)
+
+                    if counter == self.total_tiles:
+                        logger.info(f"Received {counter} out of total {self.total_tiles} tasks - ending.")
+                        break
+                # kończymy konsumpcję
+                channel.cancel()
+
+            connection.close()
+
         logger.info("Writer process finished.")
 
     def move_h5_to_tiff(self):
@@ -152,5 +207,5 @@ class TiledFileWriter:
         self.writer_process.start()
 
         self._is_started = True
-        print("Writer process ready to receive tiles")
+        logger.info("Writer process ready to receive tiles")
 
