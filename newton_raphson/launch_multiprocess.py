@@ -1,13 +1,24 @@
-from multiprocessing import Process, Queue, set_start_method, Pool, get_start_method
-import queue
-import numpy as np
-from typing import List, Tuple
-from math import sqrt
-from tqdm import tqdm
 import logging
+import queue
+from math import sqrt
+from multiprocessing import (
+    get_start_method,
+    Pool,
+    Process,
+    Queue,
+    set_start_method,
+)
+from typing import (
+    List,
+    Tuple,
+)
+
+import numpy as np
+from tqdm import tqdm
 
 from .newton_raphson_compute import calculate_newton_raphson
 from .utils import combine_arrays_into_square
+
 
 logger = logging.getLogger(__name__)
 

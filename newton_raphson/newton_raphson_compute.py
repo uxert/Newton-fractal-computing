@@ -1,9 +1,11 @@
-import scipy
-import numpy.polynomial as np_poly
-import numpy as np
-from typing import List
-import warnings
 import logging
+import warnings
+from typing import List
+
+import numpy as np
+import numpy.polynomial as np_poly
+import scipy
+
 
 logger = logging.getLogger(__name__)
 

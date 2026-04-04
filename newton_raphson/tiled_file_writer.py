@@ -1,14 +1,14 @@
+import logging
 import multiprocessing
+import os
+import uuid
+from multiprocessing import Process
 
 import h5py
-import tifffile
-import numpy as np
-from multiprocessing import Process, Queue
 import matplotlib.cm as cm
-import uuid
-import sys
-import os
-import logging
+import numpy as np
+import tifffile
+
 
 logger = logging.getLogger(__name__)
 
