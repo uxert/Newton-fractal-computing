@@ -1,13 +1,18 @@
 """This module contains things that are used by rest of the package"""
 
-import numpy as np
-from typing import List, Tuple
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-from PIL import Image
-from math import sqrt
-import tifffile
 import logging
+from math import sqrt
+from typing import (
+    List,
+    Tuple,
+)
+
+import matplotlib.cm as cm
+import matplotlib.pyplot as plt
+import numpy as np
+import tifffile
+from PIL import Image
+
 
 logger = logging.getLogger(__name__)
 

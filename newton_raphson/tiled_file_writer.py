@@ -1,14 +1,14 @@
+import logging
 import multiprocessing
+import os
+import uuid
+from multiprocessing import Process
 
 import h5py
-import tifffile
-import numpy as np
-from multiprocessing import Process, Queue
 import matplotlib.cm as cm
-import uuid
-import sys
-import os
-import logging
+import numpy as np
+import tifffile
+
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +22,16 @@ class TiledFileWriter:
     at once
     """
 
-    def __init__(self, filename, tile_queue: multiprocessing.Queue, sqrt_points_total, sqrt_tiles_amount, dtype=np.uint8,
-                 compression='adobe_deflate', compression_level=9):
+    def __init__(
+            self,
+            filename,
+            tile_queue: multiprocessing.Queue,
+            sqrt_points_total,
+            sqrt_tiles_amount,
+            dtype=np.uint8,
+            compression='adobe_deflate',
+            compression_level=9,
+    ):
         """
         Initialize the TiledTiffWriter.
 
@@ -49,7 +57,6 @@ class TiledFileWriter:
         self.compression = compression
         self.compression_level = compression_level
 
-
         self.total_tiles = sqrt_tiles_amount ** 2
 
         # Process and queue (initialized in start())
@@ -57,22 +64,22 @@ class TiledFileWriter:
         self.writer_process = None
         self._is_started = False
 
-        logger.info(f"ttf initialized: {self.total_tiles:_} tiles ({self.sqrt_tiles_amount}x{self.sqrt_tiles_amount})\n"
-              f"Compression: {self.compression} | Compression level (relevant for deflate only): {self.compression_level}\n")
-
+        logger.info(
+            f"ttf initialized: {self.total_tiles:_} tiles ({self.sqrt_tiles_amount}x{self.sqrt_tiles_amount})\n"
+            f"Compression: {self.compression} | Compression level (relevant for deflate only): {self.compression_level}\n",
+        )
 
     def create_h5(self, height, width):
         logger.info(f"Creating {height}x{width} HDF5 file")
         with h5py.File(self.h5_filename, "w") as f:
             _ = f.create_dataset(
                 self.h5_dset_name,
-                shape=(height, width ),
+                shape=(height, width),
                 dtype='uint8',
                 chunks=(128, 128),  # chunk size for efficient access
                 compression='gzip',
-                compression_opts=self.compression_level  # compression level (1-9)
+                compression_opts=self.compression_level,  # compression level (1-9)
             )
-
 
     def write_one_tile(self, dset, tile_no, tile_data):
         tile_size = self.tile_one_axis_size
@@ -124,7 +131,7 @@ class TiledFileWriter:
                 compression='deflate',
                 photometric='palette',
                 colormap=colormap,
-                bigtiff=True
+                bigtiff=True,
             )
         os.remove(self.h5_filename)
         logger.info("Transfer complete.")

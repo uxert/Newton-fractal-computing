@@ -1,12 +1,13 @@
 """This module is meant so serve as an introduction to creating the image itself"""
 
+from itertools import product
+from typing import List
+
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.polynomial.polynomial as np_poly
-from PIL import Image
-import matplotlib.pyplot as plt
-from typing import List
 import scipy
-from itertools import product
+from PIL import Image
 
 
 def simple_example():
