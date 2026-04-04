@@ -3,6 +3,9 @@ import numpy.polynomial as np_poly
 import numpy as np
 from typing import List
 import warnings
+import logging
+
+logger = logging.getLogger(__name__)
 
 from .utils import compare_with_values
 
@@ -34,7 +37,7 @@ def calc_newt_and_return_root_no_vectorized(x: np.ndarray[complex], poly: np_pol
         if str(e) == f"all failed to converge after {iterations} iterations":
             result = np.full(x.shape, -1, dtype=np.int8)
         else:
-            print(f"Vectorized Newton-Raphson failed with the following error: {e}")
+            logger.error(f"Vectorized Newton-Raphson failed with the following error: {e}")
             raise e
     return result
 

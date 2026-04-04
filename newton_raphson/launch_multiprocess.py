@@ -4,9 +4,12 @@ import numpy as np
 from typing import List, Tuple
 from math import sqrt
 from tqdm import tqdm
+import logging
 
 from .newton_raphson_compute import calculate_newton_raphson
 from .utils import combine_arrays_into_square
+
+logger = logging.getLogger(__name__)
 
 if get_start_method(allow_none=True) is None:
     set_start_method("spawn")  # Numpy and its threads go haywire when forking (which is default on UNIX, my machine)
@@ -19,14 +22,14 @@ def newton_raphson_worker(mp_queue: Queue, worker_no: int, poly: np.polynomial.P
             try:
                 mp_queue.put((worker_no, result), block=False)
             except queue.Full:
-                print("Queue was full. This means your file-writer is not keeping up! Decrease compression")
+                logger.warning("Queue was full. This means your file-writer is not keeping up! Decrease compression")
                 # Now do blocking put if needed
                 mp_queue.put((worker_no, result), block=True)
             return None
         else:
             return worker_no, result
     except Exception as e:
-        print(f"Worker {worker_no} failed: {e}")
+        logger.error(f"Worker {worker_no} failed: {e}")
         if mp_queue is not None:
             mp_queue.put((worker_no, f"ERROR: {e}"))
         raise
@@ -129,9 +132,9 @@ def launch_parallel_pool_fragment_writing(poly: np.polynomial.Polynomial, chunks
         if used_type != type(chunk[0]) or used_type != type(chunk[1]):
             raise ValueError(f'Chunk type not consistent')
 
-    print(f"[Multiprocess Launcher] using generator to generate tasks on the fly - total expected task amount: {len(chunks):_}")
+    logger.info(f"Using generator to generate tasks on the fly - total expected task amount: {len(chunks):_}")
     tasks = _task_generator(queue, poly, chunks, used_type)
-    print(f"[Multiprocess Launcher] Launching pool with {n_workers} workers")
+    logger.info(f"Launching pool with {n_workers} workers")
 
     with Pool(processes=n_workers) as pool:
         counter = 0

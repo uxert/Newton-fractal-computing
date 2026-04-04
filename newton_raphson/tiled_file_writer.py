@@ -8,6 +8,9 @@ import matplotlib.cm as cm
 import uuid
 import sys
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class TiledFileWriter:
@@ -54,12 +57,12 @@ class TiledFileWriter:
         self.writer_process = None
         self._is_started = False
 
-        print(f"[File writer] ttf initialized: {self.total_tiles:_} tiles ({self.sqrt_tiles_amount}x{self.sqrt_tiles_amount})\n"
+        logger.info(f"ttf initialized: {self.total_tiles:_} tiles ({self.sqrt_tiles_amount}x{self.sqrt_tiles_amount})\n"
               f"Compression: {self.compression} | Compression level (relevant for deflate only): {self.compression_level}\n")
 
 
     def create_h5(self, height, width):
-        print(f"[File writer] Creating {height}x{width} HDF5 file")
+        logger.info(f"Creating {height}x{width} HDF5 file")
         with h5py.File(self.h5_filename, "w") as f:
             _ = f.create_dataset(
                 self.h5_dset_name,
@@ -97,11 +100,11 @@ class TiledFileWriter:
 
                 tile_no, tile_data = item
                 self.write_one_tile(dset, tile_no, tile_data)
-        print("[File writer] Writer process finished.")
+        logger.info("Writer process finished.")
 
     def move_h5_to_tiff(self):
 
-        print("[File writer] Waiting for writer process to finish...")
+        logger.info("Waiting for writer process to finish...")
         self.writer_process.join()
         cmap = cm.get_cmap("tab10")
         # have to use np.uint16 for colormap. This is just the colormap, not the array with data which is still np.uint8
@@ -111,7 +114,7 @@ class TiledFileWriter:
             colormap[i, :] = (np.array(rgba[:3]) * 65535).astype(np.uint16)
         colormap = colormap.T
 
-        print("[File writer] Beginning transfer from h5 to tiff...")
+        logger.info("Beginning transfer from h5 to tiff...")
         with h5py.File(self.h5_filename, "r") as f:
             dset = f[self.h5_dset_name]
             tifffile.imwrite(
@@ -124,7 +127,7 @@ class TiledFileWriter:
                 bigtiff=True
             )
         os.remove(self.h5_filename)
-        print("[File writer] Transfer complete.")
+        logger.info("Transfer complete.")
 
     def start(self):
         """
@@ -142,5 +145,5 @@ class TiledFileWriter:
         self.writer_process.start()
 
         self._is_started = True
-        print("[File writer] Writer process ready to receive tiles")
+        print("Writer process ready to receive tiles")
 
