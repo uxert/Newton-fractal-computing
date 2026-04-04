@@ -6,7 +6,8 @@ from .newton_raphson_compute import calculate_newton_raphson
 
 import logging
 
-logger = logging.getLogger(__name__)
+# hardcoded so that logging sets up correctly even when launching this module directly (gets name __main__ then)
+logger = logging.getLogger("newton_raphson.distributed_worker")
 
 def start_newton_raphson_worker(
         tasks_queue: str = "tasks",
