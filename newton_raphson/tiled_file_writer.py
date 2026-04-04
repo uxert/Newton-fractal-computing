@@ -26,8 +26,16 @@ class TiledFileWriter:
     at once
     """
 
-    def __init__(self, filename, tile_queue: multiprocessing.Queue, sqrt_points_total, sqrt_tiles_amount, dtype=np.uint8,
-                 compression='adobe_deflate', compression_level=9, distributed=False):
+    def __init__(
+            self,
+            filename,
+            tile_queue: multiprocessing.Queue,
+            sqrt_points_total,
+            sqrt_tiles_amount,
+            dtype=np.uint8,
+            compression='adobe_deflate',
+            compression_level=9,
+            distributed=False, ):
         """
         Initialize the TiledTiffWriter.
 
@@ -54,7 +62,6 @@ class TiledFileWriter:
         self.compression_level = compression_level
         self.distributed = distributed
 
-
         self.total_tiles = sqrt_tiles_amount ** 2
 
         # Process and queue (initialized in start())
@@ -77,7 +84,6 @@ class TiledFileWriter:
                 compression='gzip',
                 compression_opts=self.compression_level  # compression level (1-9)
             )
-
 
     def write_one_tile(self, dset, tile_no, tile_data):
         tile_size = self.tile_one_axis_size
@@ -122,7 +128,7 @@ class TiledFileWriter:
                 # 2. Prosta pętla konsumująca – odpowiednik while True + queue.get()
                 for method_frame, properties, body in channel.consume(
                         queue=queue_name,
-                        inactivity_timeout=None  # blokuj aż przyjdzie wiadomość
+                        inactivity_timeout=None,  # blokuj aż przyjdzie wiadomość
                 ):
                     # W teorii inactivity_timeout=None => nie będzie None,
                     # ale ostrożność nie zaszkodzi.
@@ -176,7 +182,7 @@ class TiledFileWriter:
                 compression='deflate',
                 photometric='palette',
                 colormap=colormap,
-                bigtiff=True
+                bigtiff=True,
             )
         os.remove(self.h5_filename)
         logger.info("Transfer complete.")
