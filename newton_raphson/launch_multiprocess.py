@@ -14,8 +14,10 @@ from typing import (
 )
 
 import numpy as np
+import numpy.typing
 from tqdm import tqdm
 
+from .data_models import Task
 from .newton_raphson_compute import calculate_newton_raphson
 from .utils import combine_arrays_into_square
 
@@ -53,6 +55,21 @@ def newton_raphson_worker(
             mp_queue.put((worker_no, f"ERROR: {e}"))
         raise
 
+def newton_raphson_worker_local(task: Task) -> Tuple[int, numpy.typing.NDArray] | None:
+    """
+    Worker that is meant to be launched via process pool. No queues, simply returns the result after it's done.
+    Returns None if task failed
+    """
+    try:
+        result = calculate_newton_raphson(
+            poly=task.poly,
+            real_linspace=task.real_linspace,
+            imaginary_linspace=task.img_linspace,
+        )
+        return task.task_id, result
+    except Exception as e:
+        logger.error(f"Worker failed: {e}")
+        return None
 
 def launch_parallel_fixed(poly: np.polynomial.Polynomial, chunks: List[Tuple]) -> np.ndarray:
     """
