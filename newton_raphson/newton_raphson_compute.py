@@ -29,7 +29,7 @@ def calc_newt_and_return_root_no(
 
 
 def calc_newt_and_return_root_no_vectorized(
-        x: np.ndarray[complex],
+        x: np.typing.NDArray[complex],
         poly: np_poly.Polynomial,
         deriv: np_poly.Polynomial,
         roots_list: List[complex],
