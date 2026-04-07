@@ -10,7 +10,7 @@ import scipy
 logger = logging.getLogger(__name__)
 
 from .utils import compare_with_values
-
+from .data_models import RootConvergenceMap
 
 def calc_newt_and_return_root_no(
         x: complex,
@@ -34,7 +34,7 @@ def calc_newt_and_return_root_no_vectorized(
         deriv: np_poly.Polynomial,
         roots_list: List[complex],
         iterations: int = 100,
-) -> np.ndarray[np.int8]:
+) -> RootConvergenceMap:
     result = np.full(x.shape, -1, dtype=np.int8)
     x_flat = x.flatten()
     try:
@@ -52,7 +52,7 @@ def calc_newt_and_return_root_no_vectorized(
         else:
             logger.error(f"Vectorized Newton-Raphson failed with the following error: {e}")
             raise e
-    return result
+    return RootConvergenceMap(data=result)
 
 
 def calculate_newton_raphson(
@@ -65,7 +65,8 @@ def calculate_newton_raphson(
         img_lower: int = -5,
         img_upper: int = 5,
         iterations: int = 100,
-        quiet=True, ):
+        quiet=True,
+) -> RootConvergenceMap:
     """
     Function to visualize converge of Newton-Raphson algorithm for given fragment of complex space, defined by real upper/lower
     and img lower/upper bounds or by real_linspace and imaginary_linspace.

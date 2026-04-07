@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 import numpy as np
+from numpy.typing import NDArray
 
 
 @dataclass(frozen=True)
@@ -15,3 +16,7 @@ class Task:
     poly: np.polynomial.Polynomial
     real_linspace: np.ndarray
     img_linspace: np.ndarray
+
+@dataclass(frozen=True)
+class RootConvergenceMap:
+    data: NDArray[np.int8]

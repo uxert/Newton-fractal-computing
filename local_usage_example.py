@@ -2,6 +2,7 @@ import multiprocessing
 import time
 from concurrent.futures import (
     ALL_COMPLETED,
+    Future,
     wait,
 )
 
@@ -11,7 +12,10 @@ from newton_raphson import (
     tiled_file_writer,
     utils,
 )
-from newton_raphson.data_models import Task
+from newton_raphson.data_models import (
+    RootConvergenceMap,
+    Task,
+)
 from newton_raphson.entrypoints import EntrypointsManager
 
 
@@ -39,11 +43,12 @@ if __name__ == "__main__":
     manager = multiprocessing.Manager()
     queue = manager.Queue(maxsize=100)  # really small - if the file writer is not keeping up this will fill almost instantly
 
-    def _on_local_task_done(future):
+    def _on_local_task_done(future: Future[tuple[int, RootConvergenceMap]]):
         if future.result() is None:
             print("[Main] Task gave result() None!")
             return
-        tile_no, tile_data = future.result()
+        tile_no, root_convergence_map = future.result()
+        tile_data = root_convergence_map.data
         queue.put((tile_no, tile_data))
 
     try:
