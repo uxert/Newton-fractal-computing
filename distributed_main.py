@@ -42,6 +42,7 @@ if __name__ == "__main__":
 
     b = time.perf_counter()
     chunks = utils.divide_complex_space(real_lower, real_upper, img_lower, img_upper, sqrt_points_per_chunk, sqrt_chunks_amount, lazy=True)
+    chunks = chunks.data
     e = time.perf_counter()
     print(f"[Main] Dividing into chunks took {e-b:.2f} seconds")
     tasks = _task_generator(poly, chunks)

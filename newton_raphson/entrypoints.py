@@ -5,7 +5,10 @@ from concurrent.futures import (
 from concurrent.futures.process import ProcessPoolExecutor
 from multiprocessing import get_context
 
-from .data_models import Task
+from .data_models import (
+    RootConvergenceMap,
+    Task,
+)
 from .distributed_worker import start_newton_raphson_worker
 from .launch_multiprocess import newton_raphson_worker_local
 
@@ -22,14 +25,14 @@ class EntrypointsManager:
         cls.local_executor = ProcessPoolExecutor(max_workers=workers_amount, mp_context=ctx)
 
     @classmethod
-    def submit_task_to_local_pool_nowait(cls, task: Task) -> Future | None:
+    def submit_task_to_local_pool_nowait(cls, task: Task) -> Future[tuple[int, RootConvergenceMap]] | None:
         """If returns None, this means that local workers were not spawned"""
         if cls.local_executor is None:
             return None
         return cls.local_executor.submit(newton_raphson_worker_local, task)
 
     @classmethod
-    def submit_task_to_local_pool_and_wait(cls, task: Task, *, timeout_secs: float = 15.):
+    def submit_task_to_local_pool_and_wait(cls, task: Task, *, timeout_secs: float = 15.) -> tuple[int, RootConvergenceMap] | None:
         """If returns None, this means that task failed, possibly because workers were not spawned or timeout came"""
         try:
             future = cls.submit_task_to_local_pool_nowait(task)

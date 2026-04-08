@@ -48,7 +48,7 @@ def start_newton_raphson_worker(
                 imaginary_linspace=imaginary_linspace,
             )
             logger.debug("Task end")
-            payload = (worker_no, result)
+            payload = (worker_no, result.data)
         except Exception as e:
             logger.error(f"Worker {worker_no} failed: {e}")
             payload = (worker_no, f"ERROR: {e}")

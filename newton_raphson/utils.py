@@ -4,7 +4,6 @@ import logging
 from math import sqrt
 from typing import (
     List,
-    Tuple,
 )
 
 import matplotlib.cm as cm
@@ -12,6 +11,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tifffile
 from PIL import Image
+
+from newton_raphson.data_models import (
+    EagerComplexSpaceDivision,
+    LazyComplexSpaceDivision,
+    LinspaceKwargs,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -85,18 +90,17 @@ def visualize_np_array_to_tiff(arr: np.ndarray, name="image.tif") -> None:
                      bigtiff=True)
 
 def divide_complex_space(real_lower: float, real_upper: float, img_lower: float, img_upper: float,
-                         N_points: int, sqrt_N_fragments: int, lazy=False) -> List[Tuple]:
+                         N_points: int, sqrt_N_fragments: int, lazy=False) ->  EagerComplexSpaceDivision | LazyComplexSpaceDivision:
     """
     Divide 2D complex space into chunks for parallel computation. The space will always be divided into "square" amount of chunks
     so that they can be later nicely aligned with np.block()
     :param N_points: is number of points PER FRAGMENT. So in total there will be N_points * sqrt_N_fragments**2 points!
     N_points is the value that one worker will receive at a time
     :param lazy: allows to control whether it calculates and returns linspaces, or arguments that need to be later passed to np.linspace()
-    :returns: IF NOT LAZY: List of tuples, each tuple has two ndarrays - first one representing real numbers,
-        second one representing imaginary numbers.
-        IF LAZY: List of nested tuples. Each tuple has two elements - one for real numbers and one for imaginary numbers.
-        Each element is a dict of keyword arguments, that need to be passed to np.linspace().
-        Hint - pass them via unpacking with ** operator.
+    :returns: IF NOT LAZY: EagerComplexSpaceDivision, which contains linspaces that can be used to construct a fragment
+    of complex plane.
+    IF LAZY: LazyComplexSpaceDivision, which contains kwargs to construct linspaces. Hint - pass them via unpacking (**)
+    :raises: ValueError if sqrt_N_fragments is not positive
     """
     fragments = []
     if lazy is False:
@@ -105,6 +109,9 @@ def divide_complex_space(real_lower: float, real_upper: float, img_lower: float,
           "memory footprint of returned linspaces themselves (still 1D vectors!) becomes problematic.")
     if lazy is True:
         logger.info("Dividing complex space using lazy evaluation.")
+
+    if not sqrt_N_fragments or sqrt_N_fragments <= 0:
+        raise ValueError("sqrt_N_fragments must be positive.")
 
     for i in range(sqrt_N_fragments):
         for j in range(sqrt_N_fragments):
@@ -123,14 +130,17 @@ def divide_complex_space(real_lower: float, real_upper: float, img_lower: float,
 
                 fragments.append((real_linspace, img_linspace))
 
-            if lazy is True:
+            else:
                 # watch for endpoint=False, otherwise the chunks will overlap
-                real_args = {"start": real_start, "stop": real_end, "num": N_points, "endpoint": False}
-                img_args = {"start": img_start, "stop": img_end, "num": N_points, "endpoint": False}
-
+                real_args: LinspaceKwargs = {"start": real_start, "stop": real_end, "num": N_points, "endpoint": False}
+                img_args: LinspaceKwargs = {"start": img_start, "stop": img_end, "num": N_points, "endpoint": False}
                 fragments.append((real_args, img_args))
 
-    return fragments
+    if lazy is False:
+        return EagerComplexSpaceDivision(data=fragments)
+    else:
+        return LazyComplexSpaceDivision(data=fragments)
+
 
 def combine_arrays_into_square(results: List[np.ndarray]):
     """

@@ -17,7 +17,10 @@ import numpy as np
 import numpy.typing
 from tqdm import tqdm
 
-from .data_models import Task
+from .data_models import (
+    RootConvergenceMap,
+    Task,
+)
 from .newton_raphson_compute import calculate_newton_raphson
 from .utils import combine_arrays_into_square
 
@@ -41,21 +44,21 @@ def newton_raphson_worker(
         result = calculate_newton_raphson(poly, real_linspace=real_linspace, imaginary_linspace=imaginary_linspace)
         if mp_queue is not None:
             try:
-                mp_queue.put((worker_no, result), block=False)
+                mp_queue.put((worker_no, result.data), block=False)
             except queue.Full:
                 logger.warning("Queue was full. This means your file-writer is not keeping up! Decrease compression")
                 # Now do blocking put if needed
-                mp_queue.put((worker_no, result), block=True)
+                mp_queue.put((worker_no, result.data), block=True)
             return None
         else:
-            return worker_no, result
+            return worker_no, result.data
     except Exception as e:
         logger.error(f"Worker {worker_no} failed: {e}")
         if mp_queue is not None:
             mp_queue.put((worker_no, f"ERROR: {e}"))
         raise
 
-def newton_raphson_worker_local(task: Task) -> Tuple[int, numpy.typing.NDArray] | None:
+def newton_raphson_worker_local(task: Task) -> Tuple[int, RootConvergenceMap] | None:
     """
     Worker that is meant to be launched via process pool. No queues, simply returns the result after it's done.
     Returns None if task failed
