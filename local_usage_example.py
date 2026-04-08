@@ -54,6 +54,7 @@ if __name__ == "__main__":
     try:
         b = time.perf_counter()
         chunks = utils.divide_complex_space(real_lower, real_upper, img_lower, img_upper, sqrt_points_per_chunk, sqrt_chunks_amount, lazy=False)
+        chunks = chunks.data
         e = time.perf_counter()
         print(f"[Main] Dividing into chunks took {e-b:.2f} seconds")
         b = time.perf_counter()
