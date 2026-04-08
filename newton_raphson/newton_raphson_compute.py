@@ -1,6 +1,9 @@
 import logging
 import warnings
-from typing import List
+from typing import (
+    Iterable,
+    List,
+)
 
 import numpy as np
 import numpy.polynomial as np_poly
@@ -32,7 +35,7 @@ def calc_newt_and_return_root_no_vectorized(
         x: np.typing.NDArray[complex],
         poly: np_poly.Polynomial,
         deriv: np_poly.Polynomial,
-        roots_list: List[complex],
+        roots_list: Iterable[complex],
         iterations: int = 100,
 ) -> RootConvergenceMap:
     result = np.full(x.shape, -1, dtype=np.int8)
