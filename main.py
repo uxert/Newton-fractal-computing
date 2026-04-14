@@ -3,7 +3,7 @@ import time
 
 import numpy.polynomial
 
-from newton_raphson import (
+from newton_raphson.compute import (
     launch_multiprocess,
     tiled_file_writer,
     utils,
@@ -40,7 +40,7 @@ if __name__ == "__main__":
         b = time.perf_counter()
         ttf = tiled_file_writer.TiledFileWriter(filename, queue, sqrt_points_total, sqrt_chunks_amount)
         ttf.start()
-        launch_multiprocess.launch_parallel_pool_fragment_writing(poly, chunks,queue, n_workers=n_workers)
+        launch_multiprocess.launch_parallel_pool_fragment_writing(poly, chunks, queue, n_workers=n_workers)
         e = time.perf_counter()
         print(f"[Main] Computation and process overhead took {e-b:.2f} seconds")
     except Exception as e:

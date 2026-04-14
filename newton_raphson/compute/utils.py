@@ -12,7 +12,7 @@ import numpy as np
 import tifffile
 from PIL import Image
 
-from newton_raphson.data_models import (
+from newton_raphson.compute.data_models import (
     EagerComplexSpaceDivision,
     LazyComplexSpaceDivision,
     LinspaceKwargs,

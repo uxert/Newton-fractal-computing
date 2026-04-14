@@ -8,25 +8,25 @@ from concurrent.futures import (
 
 import numpy.polynomial
 
-from newton_raphson import (
+from newton_raphson.compute import (
     tiled_file_writer,
     utils,
 )
-from newton_raphson.data_models import (
+from newton_raphson.compute.data_models import (
     RootConvergenceMap,
     Task,
 )
-from newton_raphson.entrypoints import EntrypointsManager
+from newton_raphson.compute.entrypoints import EntrypointsManager
 
 
 real_upper = 10
 real_lower = - real_upper
 img_upper = real_upper
 img_lower = - img_upper
-sqrt_points_total = 2_000
-sqrt_chunks_amount = 100
-polynomial_coefficients=(-16,0,0,0,15,0,0,0,1)
-n_workers = 4
+sqrt_points_total = 5_000
+sqrt_chunks_amount = 50
+polynomial_coefficients=(-1.33,0,11,0,15)
+n_workers = 8
 
 
 
