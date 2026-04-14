@@ -166,3 +166,19 @@ def combine_arrays_into_square(results: List[np.ndarray]):
     # Combine into single array
     big_array = np.block(grid)
     return big_array
+
+def get_zxy_complex_space(z: int, x: float, y: float, n:int = 200, l: float = 5) -> np.ndarray:
+    l /= 2**z  # higher zoom: smaller bounds
+    l2 = l / 2
+    start_x = x - l2
+    end_x = x + l2
+    start_y = y - l2
+    end_y = y + l2
+
+    real_linspace = np.linspace(start_x, end_x, n, endpoint=False)
+    img_linspace = np.linspace(start_y, end_y, n, endpoint=False)
+
+    re, im = np.meshgrid(real_linspace, img_linspace)
+    z_plane = re + 1j * im
+
+    return z_plane
