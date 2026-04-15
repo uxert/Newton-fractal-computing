@@ -12,7 +12,7 @@ from starlette.responses import StreamingResponse
 from ..compute.data_models import Task
 from ..compute.entrypoints import EntrypointsManager
 from ..compute.utils import (
-    get_zxy_complex_space,
+    get_zxy_complex_space_offset,
     produce_png_buffer_from_rcm,
 )
 
@@ -37,7 +37,7 @@ def read_root():
 
 @app.get("/api/tiles/{z}/{x}/{y}.png")
 def get_tiles(request: Request, z: int, x: float, y: float):
-    real, img = get_zxy_complex_space(z, x, y)
+    real, img = get_zxy_complex_space_offset(z, x, y)
     task = Task(0, np.polynomial.Polynomial((1, 0, 0, -1)), real, img)
     result = get_entrypoints_manager(request).submit_task_to_local_pool_and_wait(task, timeout_secs=2)
     if result is None:

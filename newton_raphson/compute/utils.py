@@ -188,6 +188,26 @@ def get_zxy_complex_space(z: int, x: float, y: float, n:int = 200, l: float = 5)
 
     return real_linspace, img_linspace
 
+def get_zxy_complex_space_offset(
+        z: int, x: int, y: int, n:int = 200, l: float = 1
+    ) -> tuple[np.ndarray, np.ndarray]:
+    """Returns coordinates ready for leaflet, where (x,y) is not center of the tile, but it's corner"""
+
+    tile_l = l / (2 ** z)
+
+    # X grows to the right
+    start_x = -l / 2 + x * tile_l
+    end_x = start_x + tile_l
+
+    # Y in Leaflet grows downward, but imaginary axis usually grows upward
+    start_y = -l / 2 + y * tile_l
+    end_y = start_y + tile_l
+
+    real_linspace = np.linspace(start_x, end_x, n, endpoint=False)
+    img_linspace = np.linspace(start_y, end_y, n, endpoint=False)
+
+    return real_linspace, img_linspace
+
 def produce_png_buffer_from_rcm(rcm: RootConvergenceMap) -> BytesIO:
     data = rcm.data
     bounds = np.arange(-1.5, 10.5, 1)
