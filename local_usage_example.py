@@ -17,16 +17,16 @@ from newton_raphson.data_models import (
     Task,
 )
 from newton_raphson.entrypoints import EntrypointsManager
-
+import os
 
 real_upper = 10
 real_lower = - real_upper
 img_upper = real_upper
 img_lower = - img_upper
-sqrt_points_total = 10_000
+sqrt_points_total = 2_000
 sqrt_chunks_amount = 100
 polynomial_coefficients=(-16,0,0,0,15,0,0,0,1)
-n_workers = 6
+n_workers = 4
 
 
 
@@ -58,6 +58,7 @@ if __name__ == "__main__":
         e = time.perf_counter()
         print(f"[Main] Dividing into chunks took {e-b:.2f} seconds")
         b = time.perf_counter()
+        os_b = os.times()
         tasks = []
         for i, (real_linspace, imag_linspace) in enumerate(chunks):
             tasks.append(Task(i, poly=poly, real_linspace=real_linspace, img_linspace=imag_linspace))
@@ -73,8 +74,12 @@ if __name__ == "__main__":
         wait(futures, return_when=ALL_COMPLETED)
         queue.put(None)
         e = time.perf_counter()
-        print(f"[Main] Computation and process overhead took {e-b:.2f} seconds")
         EntrypointsManager.kill_all_workers()
+        os_e = os.times()
+        child_user = os_e.children_user - os_b.children_user
+        child_system = os_e.children_system - os_b.children_system
+        print(f"[Main] Computation and process overhead took {e-b:.2f} seconds")
+        print(f"[Main] Child user: {child_user}, Child system: {child_system}")
     except Exception as e:
         print(f"[Main] There was an error during computation: {e}")
         EntrypointsManager.kill_all_workers()
