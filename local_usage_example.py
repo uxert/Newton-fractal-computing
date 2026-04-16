@@ -23,10 +23,10 @@ real_upper = 10
 real_lower = - real_upper
 img_upper = real_upper
 img_lower = - img_upper
-sqrt_points_total = 10_000
+sqrt_points_total = 2_000
 sqrt_chunks_amount = 100
 polynomial_coefficients=(-16,0,0,0,15,0,0,0,1)
-n_workers = 6
+n_workers = 4
 
 
 
@@ -73,8 +73,8 @@ if __name__ == "__main__":
         wait(futures, return_when=ALL_COMPLETED)
         queue.put(None)
         e = time.perf_counter()
-        print(f"[Main] Computation and process overhead took {e-b:.2f} seconds")
         EntrypointsManager.kill_all_workers()
+        print(f"[Main] Computation and process overhead took {e-b:.2f} seconds")
     except Exception as e:
         print(f"[Main] There was an error during computation: {e}")
         EntrypointsManager.kill_all_workers()

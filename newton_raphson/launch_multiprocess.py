@@ -21,7 +21,7 @@ from .data_models import (
     RootConvergenceMap,
     Task,
 )
-from .newton_raphson_compute import calculate_newton_raphson
+from .newton_raphson_compute_numba import calculate_newton_raphson
 from .utils import combine_arrays_into_square
 
 

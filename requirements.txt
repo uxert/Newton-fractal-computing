@@ -6,3 +6,4 @@ tqdm
 tifffile
 h5py
 pika
+numba
