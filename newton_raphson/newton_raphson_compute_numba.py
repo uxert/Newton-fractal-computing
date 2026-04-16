@@ -6,25 +6,25 @@ from .data_models import RootConvergenceMap
 
 
 @numba.njit
-def _eval_polynomial(coef_desc: np.ndarray, z: np.complex128) -> np.complex128:
+def _eval_polynomial(coef_desc: np.ndarray, z: np.complex128) -> tuple[np.complex128, np.complex128]:
     result = 0 + 0j
+    deriv = 0 + 0j
     for i in coef_desc:
+        deriv = z * deriv + result
         result = z * result + i
-    return result
+    return result, deriv
 
 
 @numba.njit
 def _calc_newt_and_return_root_no_numba(
         z: np.complex128,
         poly_coef_desc: np.ndarray,
-        deriv_coef_desc: np.ndarray,
         roots: np.ndarray,
         iterations,
         tol=1e-6,
 ) -> int:
     for _ in range(iterations):
-        f = _eval_polynomial(poly_coef_desc, z)
-        f_prime = _eval_polynomial(deriv_coef_desc, z)
+        f, f_prime = _eval_polynomial(poly_coef_desc, z)
 
         if np.abs(f_prime) < 1e-14:
             return -1
@@ -41,7 +41,7 @@ def _calc_newt_and_return_root_no_numba(
 
 @numba.njit
 def _apply_newton_numba(
-        z_plane, poly_coef_desc: np.ndarray, deriv_coef_desc: np.ndarray, roots, iterations
+        z_plane, poly_coef_desc: np.ndarray, roots, iterations
 ) -> np.typing.NDArray[np.int8]:
 
     rows, cols = z_plane.shape
@@ -49,7 +49,7 @@ def _apply_newton_numba(
     for i in numba.prange(rows):
         for j in range(cols):
             result[i, j] = _calc_newt_and_return_root_no_numba(
-                z_plane[i, j], poly_coef_desc, deriv_coef_desc, roots, iterations
+                z_plane[i, j], poly_coef_desc, roots, iterations
             )
 
     return result
@@ -68,7 +68,6 @@ def calculate_newton_raphson(
     deriv = poly.deriv()
     roots = poly.roots()
     poly_coef_desc = poly.coef[::-1]
-    deriv_coef_desc = deriv.coef[::-1]
-    result = _apply_newton_numba(z_plane, poly_coef_desc, deriv_coef_desc, roots, iterations)
+    result = _apply_newton_numba(z_plane, poly_coef_desc, roots, iterations)
     return RootConvergenceMap(data=result)
 
