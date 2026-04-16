@@ -91,8 +91,9 @@ class TiledFileWriter:
 
     def write_one_tile(self, dset, tile_no, tile_data):
         tile_size = self.tile_one_axis_size
-        tile_row = tile_no // self.sqrt_tiles_amount
-        tile_col = tile_no % self.sqrt_tiles_amount
+
+        tile_col = tile_no // self.sqrt_tiles_amount
+        tile_row = tile_no % self.sqrt_tiles_amount
 
         start_row = tile_row * tile_size
         start_col = tile_col * tile_size
