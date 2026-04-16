@@ -89,7 +89,7 @@ def calculate_newton_raphson(
 
     real = np.linspace(real_lower, real_upper, N) if real_linspace is None else real_linspace
     imag = np.linspace(img_lower, img_upper, N) if imaginary_linspace is None else imaginary_linspace
-    re, im = np.meshgrid(imag, real)
+    re, im = np.meshgrid(real, imag)
     z_plane = re + 1j * im
 
     result = calc_newt_and_return_root_no_vectorized(z_plane, poly, deriv, roots, iterations)
