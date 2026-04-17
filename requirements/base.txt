@@ -1,0 +1,6 @@
+pillow
+scipy
+matplotlib
+numpy
+tqdm
+numba

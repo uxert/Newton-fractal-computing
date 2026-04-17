@@ -1,8 +1,13 @@
+try:
+    import fastapi
+    import uvicorn
+except ImportError:
+    raise ImportError("Install requirements/http-server to run FastAPI webserver")
+
 from contextlib import asynccontextmanager
 from typing import cast
 
 import numpy as np
-import uvicorn
 from fastapi import (
     FastAPI,
     Request,

@@ -1,0 +1,3 @@
+-r image-writer.txt
+
+pika

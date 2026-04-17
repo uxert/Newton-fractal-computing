@@ -7,14 +7,15 @@ from multiprocessing import Process
 
 import h5py
 import matplotlib.cm as cm
-
-
-logger = logging.getLogger(__name__)
 import numpy as np
-import pika
 import tifffile
 
 from constants import amqp_url
+from .amqp_utils import (
+    check_pika_lib_availability,
+    obtain_amqp_blocking_connection,
+    obtain_amqp_channel,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -118,13 +119,13 @@ class TiledFileWriter:
                     tile_no, tile_data = item
                     self.write_one_tile(dset, tile_no, tile_data)
         else:
-            # 1. Połącz się z RabbitMQ i zadbaj o kolejkę
+            if check_pika_lib_availability() is False:
+                raise ImportError("Cannot use distributed tile writer without `pika`, install requirements/amqp.txt")
+
             logger.info("Establishing rabbit queue with tiles")
             queue_name = "tiles"
-            connection = pika.BlockingConnection(pika.URLParameters(amqp_url))
-            channel = connection.channel()
-            channel.queue_declare(queue=queue_name, durable=True)
-            channel.basic_qos(prefetch_count=1)  # jeden tile naraz
+            connection = obtain_amqp_blocking_connection(amqp_url)
+            channel = obtain_amqp_channel(connection, queue_name)
 
             counter = 0
             with h5py.File(self.h5_filename, "r+") as f:
