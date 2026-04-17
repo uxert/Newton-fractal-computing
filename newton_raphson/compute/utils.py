@@ -1,21 +1,25 @@
 """This module contains things that are used by rest of the package"""
 
 import logging
+from io import BytesIO
 from math import sqrt
 from typing import (
     List,
 )
 
+import matplotlib
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
 import tifffile
+from matplotlib import colors
 from PIL import Image
 
-from newton_raphson.data_models import (
+from newton_raphson.compute.data_models import (
     EagerComplexSpaceDivision,
     LazyComplexSpaceDivision,
     LinspaceKwargs,
+    RootConvergenceMap,
 )
 
 
@@ -166,3 +170,54 @@ def combine_arrays_into_square(results: List[np.ndarray]):
     # Combine into single array
     big_array = np.block(grid)
     return big_array
+
+def get_zxy_complex_space(z: int, x: float, y: float, n:int = 200, l: float = 5) -> tuple[np.ndarray, np.ndarray]:
+    l /= 2**z  # higher zoom: smaller bounds
+    l2 = l / 2
+    start_x = x - l2
+    end_x = x + l2
+    start_y = y - l2
+    end_y = y + l2
+
+    real_linspace = np.linspace(start_x, end_x, n, endpoint=False)
+    img_linspace = np.linspace(start_y, end_y, n, endpoint=False)
+
+    # Task takes linspaces instead of z_plane
+    # re, im = np.meshgrid(real_linspace, img_linspace)
+    # z_plane = re + 1j * im
+
+    return real_linspace, img_linspace
+
+def get_zxy_complex_space_offset(
+        z: int, x: int, y: int, n:int = 200, l: float = 1
+    ) -> tuple[np.ndarray, np.ndarray]:
+    """Returns coordinates ready for leaflet, where (x,y) is not center of the tile, but it's corner"""
+
+    tile_l = l / (2 ** z)
+
+    # X grows to the right
+    start_x = -l / 2 + x * tile_l
+    end_x = start_x + tile_l
+
+    # Y in Leaflet grows downward, but imaginary axis usually grows upward
+    start_y = -l / 2 + y * tile_l
+    end_y = start_y + tile_l
+
+    real_linspace = np.linspace(start_x, end_x, n, endpoint=False)
+    img_linspace = np.linspace(start_y, end_y, n, endpoint=False)
+
+    return real_linspace, img_linspace
+
+def produce_png_buffer_from_rcm(rcm: RootConvergenceMap) -> BytesIO:
+    data = rcm.data
+    bounds = np.arange(-1.5, 10.5, 1)
+    cmap = colors.ListedColormap(["black"] + list(matplotlib.colormaps.get_cmap("tab10").colors))
+    norm = colors.BoundaryNorm(bounds, ncolors=cmap.N)
+    rgba = (cmap(norm(data)) * 255).astype(np.uint8)
+
+    image = Image.fromarray(rgba, mode="RGBA")
+    buffer = BytesIO()
+    image.save(buffer, format="PNG")
+    buffer.seek(0)
+
+    return buffer

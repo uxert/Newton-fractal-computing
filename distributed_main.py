@@ -7,7 +7,7 @@ import pika
 from pika.exceptions import AMQPConnectionError
 
 from constants import amqp_url
-from newton_raphson import (
+from newton_raphson.compute import (
     tiled_file_writer,
     utils,
 )
