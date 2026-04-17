@@ -38,7 +38,9 @@ def _calc_newt_and_return_root_no_numba(
     for _ in range(iterations):
         f, f_prime = _eval_polynomial(poly_coef_desc, z)
 
-        if np.abs(f_prime) < 1e-14:
+        max_deriv_tolerance = 1e-14
+
+        if f_prime.real * f_prime.real + f_prime.imag * f_prime.imag < max_deriv_tolerance * max_deriv_tolerance:
             return -1
 
         z = z - f/f_prime
