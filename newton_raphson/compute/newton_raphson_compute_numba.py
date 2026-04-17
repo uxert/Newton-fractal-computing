@@ -15,6 +15,18 @@ def _eval_polynomial(coef_desc: np.ndarray, z: np.complex128) -> tuple[np.comple
     return result, deriv
 
 
+@numba.njit(fastmath={'nsz', 'arcp', 'contract', 'reassoc'}, inline='always')
+def _check_for_close_root(z: np.complex128, nroots, roots, tol2: float) -> int:
+    best_idx = -1
+    best_d2 = tol2
+    for k in range(nroots):
+        diff = roots[k] - z
+        d2 = diff.real * diff.real + diff.imag * diff.imag
+        if d2 < best_d2:
+            best_d2 = d2
+            best_idx = k
+    return best_idx
+
 @numba.njit(fastmath={'nsz', 'arcp', 'contract', 'reassoc'})
 def _calc_newt_and_return_root_no_numba(
         z: np.complex128,
@@ -30,11 +42,12 @@ def _calc_newt_and_return_root_no_numba(
             return -1
 
         z = z - f/f_prime
-        distances = np.abs(roots - z)
 
-        root_idx = int(np.argmin(distances))
-        if distances[root_idx] < tol:
-            return root_idx
+        tol2 = tol * tol
+        nroots = roots.shape[0]
+        best_idx = _check_for_close_root(z, nroots, roots, tol2)
+        if best_idx >= 0:
+            return best_idx
 
     return -1
 
