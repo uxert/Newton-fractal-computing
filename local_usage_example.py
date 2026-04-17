@@ -17,16 +17,16 @@ from newton_raphson.compute.data_models import (
     Task,
 )
 from newton_raphson.compute.entrypoints import EntrypointsManager
-
+import os
 
 real_upper = 10
 real_lower = - real_upper
 img_upper = real_upper
 img_lower = - img_upper
-sqrt_points_total = 5_000
+sqrt_points_total = 10_000
 sqrt_chunks_amount = 50
 polynomial_coefficients=(-1.33,0,11,0,15)
-n_workers = 8
+n_workers = 2
 
 
 
@@ -53,6 +53,7 @@ if __name__ == "__main__":
 
     try:
         b = time.perf_counter()
+        os_b = os.times()
         chunks = utils.divide_complex_space(real_lower, real_upper, img_lower, img_upper, sqrt_points_per_chunk, sqrt_chunks_amount, lazy=False)
         chunks = chunks.data
         e = time.perf_counter()
@@ -74,7 +75,11 @@ if __name__ == "__main__":
         queue.put(None)
         e = time.perf_counter()
         EntrypointsManager.kill_all_workers()
+        os_e = os.times()
         print(f"[Main] Computation and process overhead took {e-b:.2f} seconds")
+        child_system_time = os_e.children_system - os_b.children_system
+        child_user_time = os_e.children_user - os_b.children_user
+        print(f"[Main] Children user time: {child_user_time:.2f}, children system time: {child_system_time:.2f}")
     except Exception as e:
         print(f"[Main] There was an error during computation: {e}")
         EntrypointsManager.kill_all_workers()
