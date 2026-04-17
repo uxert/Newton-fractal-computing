@@ -11,7 +11,6 @@ import matplotlib
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
-import tifffile
 from matplotlib import colors
 from PIL import Image
 
@@ -71,6 +70,10 @@ def visualize_np_array_to_tiff(arr: np.ndarray, name="image.tif") -> None:
     Value -1 will always be visualized as black.
     Saves as RGB TIFF image.
     """
+    try:
+        import tifffile
+    except ImportError:
+        raise ImportError("Install requirements/image-writer.txt to save numpy array as RGB TIFF image.")
     unique_vals = np.unique(arr[arr != -1])
     n_colors = len(unique_vals)
     if n_colors > 10:

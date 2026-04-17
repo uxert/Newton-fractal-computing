@@ -3,8 +3,4 @@ scipy
 matplotlib
 numpy
 tqdm
-tifffile
-h5py
 numba
-fastapi
-uvicorn
