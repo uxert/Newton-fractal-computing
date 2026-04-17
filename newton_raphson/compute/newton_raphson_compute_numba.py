@@ -5,7 +5,7 @@ import numpy.polynomial as np_poly
 from .data_models import RootConvergenceMap
 
 
-@numba.njit
+@numba.njit(fastmath={'nsz', 'arcp', 'contract', 'reassoc'}, inline='always')
 def _eval_polynomial(coef_desc: np.ndarray, z: np.complex128) -> tuple[np.complex128, np.complex128]:
     result = 0 + 0j
     deriv = 0 + 0j
@@ -15,7 +15,7 @@ def _eval_polynomial(coef_desc: np.ndarray, z: np.complex128) -> tuple[np.comple
     return result, deriv
 
 
-@numba.njit
+@numba.njit(fastmath={'nsz', 'arcp', 'contract', 'reassoc'})
 def _calc_newt_and_return_root_no_numba(
         z: np.complex128,
         poly_coef_desc: np.ndarray,
@@ -39,7 +39,7 @@ def _calc_newt_and_return_root_no_numba(
     return -1
 
 
-@numba.njit
+@numba.njit(fastmath={'nsz', 'arcp', 'contract', 'reassoc'})
 def _apply_newton_numba(
         z_plane, poly_coef_desc: np.ndarray, roots, iterations
 ) -> np.typing.NDArray[np.int8]:
