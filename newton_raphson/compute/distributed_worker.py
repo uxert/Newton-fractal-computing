@@ -1,9 +1,6 @@
 import logging
 import pickle
 
-import pika
-from pika.exceptions import AMQPConnectionError
-
 from constants import amqp_url
 from .newton_raphson_compute import calculate_newton_raphson
 
@@ -21,6 +18,12 @@ def start_newton_raphson_worker(
     2. calculates Newton-Raphson roots
     3. puts results to `tiles` queue
     """
+
+    try:
+        import pika
+        from pika.exceptions import AMQPConnectionError
+    except ImportError:
+        raise ImportError("To use distributed worker you need `pika`, install requirements/amqp.txt")
 
     try:
         connection = pika.BlockingConnection(pika.URLParameters(amqp_url))
