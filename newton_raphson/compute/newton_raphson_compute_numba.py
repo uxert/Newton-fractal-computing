@@ -27,6 +27,23 @@ def _check_for_close_root(z: np.complex128, nroots, roots, tol2: float) -> int:
             best_idx = k
     return best_idx
 
+
+@numba.njit(fastmath={'nsz', 'arcp', 'contract', 'reassoc'}, inline='always')
+def _explicit_complex_division(z1: np.complex128, z2: np.complex128) -> tuple[float, float]:
+    """Implemented based on https://www.cuemath.com/numbers/division-of-complex-numbers/"""
+    a = z1.real
+    b = z1.imag
+    c = z2.real
+    d = z2.imag
+
+    denom = c * c + d * d  # shared by both real and imaginary part
+
+    real_part = (a*c + b*d) / denom
+    imag_part = (b*c - a*d) / denom
+
+    return real_part, imag_part
+
+
 @numba.njit(fastmath={'nsz', 'arcp', 'contract', 'reassoc'})
 def _calc_newt_and_return_root_no_numba(
         z: np.complex128,
@@ -43,7 +60,7 @@ def _calc_newt_and_return_root_no_numba(
         if f_prime.real * f_prime.real + f_prime.imag * f_prime.imag < max_deriv_tolerance * max_deriv_tolerance:
             return -1
 
-        z = z - f/f_prime
+        z = z - complex(*_explicit_complex_division(f, f_prime))
 
         tol2 = tol * tol
         nroots = roots.shape[0]
