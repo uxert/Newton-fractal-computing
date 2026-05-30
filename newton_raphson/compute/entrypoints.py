@@ -9,7 +9,7 @@ from .data_models import (
     RootConvergenceMap,
     Task,
 )
-from .distributed_worker import start_newton_raphson_worker
+from newton_raphson.distributed.distributed_worker import start_newton_raphson_worker
 from .launch_multiprocess import newton_raphson_worker_local
 
 

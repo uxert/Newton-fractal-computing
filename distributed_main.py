@@ -6,7 +6,7 @@ import numpy.polynomial
 import pika
 from pika.exceptions import AMQPConnectionError
 
-from constants import amqp_url
+from newton_raphson.distributed.constants import amqp_url
 from newton_raphson.compute import (
     tiled_file_writer,
     utils,

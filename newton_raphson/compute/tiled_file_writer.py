@@ -10,8 +10,8 @@ import matplotlib.cm as cm
 import numpy as np
 import tifffile
 
-from constants import amqp_url
-from .amqp_utils import (
+from newton_raphson.distributed.constants import amqp_url
+from newton_raphson.distributed.amqp_utils import (
     check_pika_lib_availability,
     obtain_amqp_blocking_connection,
     obtain_amqp_channel,
