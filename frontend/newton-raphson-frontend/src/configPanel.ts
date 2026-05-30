@@ -1,5 +1,6 @@
 import { formatPolynomial, parseCoefficients } from "./polynomial";
 import { setParameters } from "./map";
+import type {config} from "./model.ts";
 
 
 export function createConfigPanel(elementId: string) {
@@ -71,8 +72,11 @@ export function createConfigPanel(elementId: string) {
       status.textContent = "Invalid coefficients";
       return;
     }
-
-    setParameters(coefficients, nInput.valueAsNumber);
+    const configObj: config = {
+        coeffs: coefficients,
+        n: nInput.valueAsNumber
+    }
+    setParameters(configObj);
   });
 
   coefficientsInput.addEventListener("input", updatePreview);

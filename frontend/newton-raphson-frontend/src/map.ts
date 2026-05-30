@@ -1,12 +1,23 @@
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import type {config} from "./model.ts";
 
 let tileLayer: L.TileLayer | null = null;
 
-function buildTileUrl(coefficients: number[], n: number) {
-  const coeffs = encodeURIComponent(coefficients.join(","));
+function buildTileUrl(configObj: config) {
+  const params = new URLSearchParams();
+  Object.entries(configObj).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+          params.set(key, String(value));
+      }
+  });
 
-  return `http://127.0.0.1:8000/api/tiles/{z}/{x}/{y}.png?coeffs=${coeffs}&n=${n}`;
+  return `http://127.0.0.1:8000/api/tiles/{z}/{x}/{y}.png?${params.toString()}`;
+}
+
+const DEFAULT_CONFIG: config = {
+    coeffs: [1, 0, -3, 2],
+    n: 200
 }
 
 export function createMap(elementId: string) {
@@ -21,7 +32,7 @@ export function createMap(elementId: string) {
     zoomSnap: 1,
   }).setView([0.0, 0.0], 0);
 
-  tileLayer = L.tileLayer(buildTileUrl([1, 0, -3, 2], 200), {
+  tileLayer = L.tileLayer(buildTileUrl(DEFAULT_CONFIG), {
     tileSize: 200,
     maxZoom: 30,
     attribution: "me",
@@ -30,10 +41,10 @@ export function createMap(elementId: string) {
   return map;
 }
 
-export function setParameters(coefficients: number[], n: number) {
+export function setParameters(configObj: config) {
   if (!tileLayer) {
     throw new Error("Tile layer not initialized. Call createMap() first.");
   }
 
-  tileLayer.setUrl(buildTileUrl(coefficients, n));
+  tileLayer.setUrl(buildTileUrl(configObj));
 }
