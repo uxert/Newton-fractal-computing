@@ -12,20 +12,18 @@ app.innerHTML = `
   <div id="map"></div>
 
   <div id="config-panel">
-    <h3>Backend Config</h3>
+    <h3>Polynomial Config</h3>
 
     <label>
-      Radius
-      <input id="radius" type="number" value="1000" />
+      Coefficients
+      <input
+        id="coefficients"
+        type="text"
+        value="1, 0, -3, 2"
+        placeholder="e.g. 1, 0, -3, 2"
+      />
     </label>
-
-    <label>
-      Mode
-      <select id="mode">
-        <option value="fast">Fast</option>
-        <option value="accurate">Accurate</option>
-      </select>
-    </label>
+    <div id="polynomial-preview">Enter coefficients...</div>  
 
     <button id="save-btn">Save</button>
 
@@ -54,8 +52,7 @@ attribution: 'me'
 }).addTo(map);
 
 type Config = {
-  radius: number;
-  mode: "fast" | "accurate";
+  coefficients: number[];
 };
 
 const saveButton =
@@ -65,28 +62,32 @@ const status =
   document.querySelector<HTMLDivElement>("#status")!;
 
 saveButton.addEventListener("click", async () => {
-  const radius =
-    document.querySelector<HTMLInputElement>("#radius")!;
+  const coefficientsInput =
+    document.querySelector<HTMLInputElement>("#coefficients")!;
 
-  const mode =
-    document.querySelector<HTMLSelectElement>("#mode")!;
+  const coefficients = coefficientsInput.value
+    .split(",")
+    .map((value) => Number(value.trim()));
+
+  const hasInvalidCoefficient = coefficients.some(Number.isNaN);
+
+  if (hasInvalidCoefficient || coefficients.length === 0) {
+    status.textContent = "Invalid coefficients";
+    return;
+  }
 
   const config: Config = {
-    radius: Number(radius.value),
-    mode: mode.value as Config["mode"],
+    coefficients,
   };
 
   try {
-    const response = await fetch(
-      "http://localhost:8000/config",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(config),
-      }
-    );
+    const response = await fetch("http://localhost:8000/config", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(config),
+    });
 
     if (!response.ok) {
       throw new Error("Backend error");
@@ -98,3 +99,88 @@ saveButton.addEventListener("click", async () => {
     status.textContent = "Failed";
   }
 });
+
+const coefficientsInput =
+  document.querySelector<HTMLInputElement>("#coefficients")!;
+
+const polynomialPreview =
+  document.querySelector<HTMLDivElement>("#polynomial-preview")!;
+
+function formatPolynomial(coefficients: number[]): string {
+  const degree = coefficients.length - 1;
+
+  const terms = coefficients
+    .map((coef, index) => {
+      if (coef === 0) return null;
+
+      const power = degree - index;
+      const absCoef = Math.abs(coef);
+
+      let variablePart = "";
+
+      if (power === 1) {
+        variablePart = "x";
+      } else if (power > 1) {
+        variablePart = `x<sup>${power}</sup>`;
+      }
+
+      let coefficientPart = "";
+
+      if (power === 0) {
+        coefficientPart = String(absCoef);
+      } else if (absCoef !== 1) {
+        coefficientPart = String(absCoef);
+      }
+
+      return {
+        sign: coef < 0 ? "-" : "+",
+        term: `${coefficientPart}${variablePart}`,
+      };
+    })
+    .filter(Boolean);
+
+  if (terms.length === 0) {
+    return "0";
+  }
+
+  return terms
+    .map((term, index) => {
+      if (index === 0) {
+        return term!.sign === "-"
+          ? `-${term!.term}`
+          : term!.term;
+      }
+
+      return ` ${term!.sign} ${term!.term}`;
+    })
+    .join("");
+}
+
+function parseCoefficients(value: string): number[] | null {
+  const coefficients = value
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0)
+    .map(Number);
+
+  if (coefficients.some(Number.isNaN)) {
+    return null;
+  }
+
+  return coefficients;
+}
+
+function updatePolynomialPreview() {
+  const coefficients = parseCoefficients(coefficientsInput.value);
+
+  if (!coefficients) {
+    polynomialPreview.textContent = "Invalid coefficients";
+    return;
+  }
+
+  polynomialPreview.innerHTML =
+    formatPolynomial(coefficients);
+}
+
+coefficientsInput.addEventListener("input", updatePolynomialPreview);
+updatePolynomialPreview();
