@@ -1,6 +1,7 @@
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type {config} from "./model.ts";
+import {MAP_CONFIG as MC, DEFAULTS} from "./constants.ts";
 
 let tileLayer: L.TileLayer | null = null;
 
@@ -16,9 +17,9 @@ function buildTileUrl(configObj: config) {
 }
 
 const DEFAULT_CONFIG: config = {
-    coeffs: [1, 0, -3, 2],
-    n: 200,
-    iterations: 100,
+    coeffs: DEFAULTS.DEFAULT_COEFFICIENTS,
+    n: DEFAULTS.DEFAULT_N,
+    iterations: DEFAULTS.DEFAULT_ITERS,
 }
 
 export function createMap(elementId: string) {
@@ -28,14 +29,14 @@ export function createMap(elementId: string) {
 
   const map = L.map(elementId, {
     crs: MyCRS,
-    minZoom: 0,
-    maxZoom: 30,
-    zoomSnap: 1,
-  }).setView([0.0, 0.0], 0);
+    minZoom: MC.MIN_ZOOM,
+    maxZoom: MC.MAX_ZOOM,
+    zoomSnap: MC.ZOOM_SNAP,
+  }).setView([MC.STARTING_VIEW[0], MC.STARTING_VIEW[1]], MC.STARTING_ZOOM);
 
   tileLayer = L.tileLayer(buildTileUrl(DEFAULT_CONFIG), {
-    tileSize: 200,
-    maxZoom: 30,
+    tileSize: MC.TILE_SIZE,
+    maxZoom: MC.MAX_ZOOM,
     attribution: "me",
   }).addTo(map);
 

@@ -1,7 +1,7 @@
 import { formatPolynomial, parseCoefficients } from "./polynomial";
 import { setParameters } from "./map";
 import type {config} from "./model.ts";
-
+import {DEFAULTS} from "./constants.ts";
 
 export function createConfigPanel(elementId: string) {
   const panel = document.querySelector<HTMLDivElement>(`#${elementId}`);
@@ -18,8 +18,8 @@ export function createConfigPanel(elementId: string) {
       <input
         id="coefficients"
         type="text"
-        value="1, 0, -3, 2"
-        placeholder="e.g. 1, 0, -3, 2"
+        value="${DEFAULTS.DEFAULT_COEFFICIENTS_PLACEHOLDER}"
+        placeholder="e.g. ${DEFAULTS.DEFAULT_COEFFICIENTS_PLACEHOLDER}"
       />
     </label>
 
@@ -29,16 +29,15 @@ export function createConfigPanel(elementId: string) {
     <input
       id="n"
       type="number"
-      value="200"
-      placeholder="200">
+      value="${DEFAULTS.DEFAULT_ITERS}"
+      placeholder="${DEFAULTS.DEFAULT_ITERS}">
     </label>
     <label>
     Iterations
     <input
     id="iterations"
     type="number"
-    value="100"
-    placeholder="100">
+    value="${DEFAULTS.DEFAULT_ITERS}"
     </label>
 
     <button id="save-btn">Save</button>
