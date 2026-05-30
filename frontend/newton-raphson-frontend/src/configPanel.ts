@@ -10,8 +10,14 @@ export function createConfigPanel(elementId: string) {
     throw new Error(`Config panel #${elementId} not found`);
   }
 
-  panel.innerHTML = `
-    <h3>Polynomial Config</h3>
+panel.innerHTML = `
+  <button id="config-fab" class="config-fab" hidden>⚙ Config</button>
+
+  <div id="config-content" class="config-content">
+    <div class="config-header">
+      <h3>Parameters config</h3>
+      <button id="minimize-config" type="button">×</button>
+    </div>
 
     <label>
       Coefficients
@@ -24,26 +30,59 @@ export function createConfigPanel(elementId: string) {
     </label>
 
     <div id="polynomial-preview"></div>
+
     <label>
-    N
-    <input
-      id="n"
-      type="number"
-      value="${DEFAULTS.DEFAULT_ITERS}"
-      placeholder="${DEFAULTS.DEFAULT_ITERS}">
+      N
+      <input
+        id="n"
+        type="number"
+        value="${DEFAULTS.DEFAULT_N}"
+        placeholder="${DEFAULTS.DEFAULT_N}"
+      />
     </label>
+
     <label>
-    Iterations
-    <input
-    id="iterations"
-    type="number"
-    value="${DEFAULTS.DEFAULT_ITERS}"
+      Iterations
+      <input
+        id="iterations"
+        type="number"
+        value="${DEFAULTS.DEFAULT_ITERS}"
+      />
     </label>
 
     <button id="save-btn">Save</button>
 
     <div id="status"></div>
+  </div>
   `;
+
+      // hide and show the panel
+  const fab = panel.querySelector<HTMLButtonElement>("#config-fab");
+  const content = panel.querySelector<HTMLDivElement>("#config-content");
+  const minimizeBtn = panel.querySelector<HTMLButtonElement>("#minimize-config");
+
+  if (!fab || !content || !minimizeBtn || !panel) {
+    throw new Error("Config panel controls not found");
+  }
+
+  function setConfigMinimized(minimized: boolean) {
+  if (!fab || !content || !minimizeBtn || !panel) {
+    throw new Error("Config panel controls not found");
+  }
+    fab.hidden = !minimized;
+    content.hidden = minimized;
+    panel.classList.toggle("config-panel-minimized", minimized);
+  }
+
+  minimizeBtn.addEventListener("click", () => {
+    setConfigMinimized(true);
+  });
+
+  fab.addEventListener("click", () => {
+    setConfigMinimized(false);
+  });
+
+  // Inputs
 
   const coefficientsInput =
     panel.querySelector<HTMLInputElement>("#coefficients")!;
