@@ -17,7 +17,8 @@ function buildTileUrl(configObj: config) {
 
 const DEFAULT_CONFIG: config = {
     coeffs: [1, 0, -3, 2],
-    n: 200
+    n: 200,
+    iterations: 100,
 }
 
 export function createMap(elementId: string) {

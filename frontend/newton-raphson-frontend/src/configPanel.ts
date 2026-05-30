@@ -32,6 +32,14 @@ export function createConfigPanel(elementId: string) {
       value="200"
       placeholder="200">
     </label>
+    <label>
+    Iterations
+    <input
+    id="iterations"
+    type="number"
+    value="100"
+    placeholder="100">
+    </label>
 
     <button id="save-btn">Save</button>
 
@@ -43,6 +51,9 @@ export function createConfigPanel(elementId: string) {
 
   const nInput =
       panel.querySelector<HTMLInputElement>("#n")!;
+
+  const iterationsInput =
+      panel.querySelector<HTMLInputElement>("#iterations")!;
 
   const polynomialPreview =
     panel.querySelector<HTMLDivElement>("#polynomial-preview")!;
@@ -74,7 +85,8 @@ export function createConfigPanel(elementId: string) {
     }
     const configObj: config = {
         coeffs: coefficients,
-        n: nInput.valueAsNumber
+        n: nInput.valueAsNumber,
+        iterations: iterationsInput.valueAsNumber,
     }
     setParameters(configObj);
   });

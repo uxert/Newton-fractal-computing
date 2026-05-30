@@ -65,6 +65,7 @@ def newton_raphson_worker_local(task: Task) -> Tuple[int, RootConvergenceMap] | 
             poly=task.poly,
             real_linspace=task.real_linspace,
             imaginary_linspace=task.img_linspace,
+            iterations=task.iterations,
         )
         return task.task_id, result
     except Exception as e:
