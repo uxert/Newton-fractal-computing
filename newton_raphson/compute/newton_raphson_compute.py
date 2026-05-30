@@ -3,6 +3,7 @@ import warnings
 from typing import (
     Iterable,
 )
+from warnings import deprecated
 
 import numpy as np
 import numpy.polynomial as np_poly
@@ -14,6 +15,7 @@ logger = logging.getLogger(__name__)
 from .data_models import RootConvergenceMap
 
 
+@deprecated("Deprecated in favor of Numba, which is over 2x faster. Use newton_raphson_compute_numba module")
 def calc_newt_and_return_root_no_vectorized(
         x: np.typing.NDArray[complex],
         poly: np_poly.Polynomial,
@@ -41,6 +43,7 @@ def calc_newt_and_return_root_no_vectorized(
     return RootConvergenceMap(data=result)
 
 
+@deprecated("Deprecated in favor of Numba, which is over 2x faster. Use newton_raphson_compute_numba module")
 def calculate_newton_raphson(
         poly: np_poly.Polynomial,
         N: int = 500,
