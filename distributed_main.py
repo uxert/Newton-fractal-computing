@@ -1,3 +1,8 @@
+try:
+    import pika
+except ImportError:
+    raise ImportError("For amqp functionality `pika` is required. Install requirements/amqp.txt")
+
 import pickle
 import time
 
@@ -6,12 +11,12 @@ import numpy.polynomial
 import pika
 from pika.exceptions import AMQPConnectionError
 
-from newton_raphson.distributed.constants import amqp_url
 from newton_raphson.compute import (
     tiled_file_writer,
     utils,
 )
 from newton_raphson.compute.entrypoints import EntrypointsManager
+from newton_raphson.distributed.constants import amqp_url
 
 
 def _task_generator(poly, chunks):
