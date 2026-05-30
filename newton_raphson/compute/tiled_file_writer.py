@@ -11,13 +11,6 @@ import matplotlib.cm as cm
 import numpy as np
 import tifffile
 
-from newton_raphson.distributed.amqp_utils import (
-    check_pika_lib_availability,
-    obtain_amqp_blocking_connection,
-    obtain_amqp_channel,
-)
-from newton_raphson.distributed.constants import amqp_url
-
 
 logger = logging.getLogger(__name__)
 
@@ -127,6 +120,12 @@ class TiledFileWriter:
         logger.info("Writer process finished.")
 
     def _dist_writer_process_func(self):
+        from newton_raphson.distributed.amqp_utils import (
+            check_pika_lib_availability,
+            obtain_amqp_blocking_connection,
+            obtain_amqp_channel,
+        )
+        from newton_raphson.distributed.constants import amqp_url
         logger.info(f"Starting writer process for distributed deployment using pika")
         if check_pika_lib_availability() is False:
             raise ImportError("Cannot use distributed tile writer without `pika`, install requirements/amqp.txt")
