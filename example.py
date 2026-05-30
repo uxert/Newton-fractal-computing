@@ -86,7 +86,6 @@ def real_example():
     re, im = np.meshgrid(imag, real)
     z_plane = re + 1j * im
     print(z_plane.shape)
-    exit(0)
     result = np.empty(shape=z_plane.shape)
     for i, j in product(range(z_plane.shape[0]), range(z_plane.shape[1])):
         result[i,j] = calc_newt_and_return_root_no(z_plane[i, j], poly, deriv, roots)
