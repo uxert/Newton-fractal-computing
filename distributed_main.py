@@ -11,6 +11,7 @@ from newton_raphson.compute import (
     tiled_file_writer,
     utils,
 )
+from newton_raphson.compute.entrypoints import EntrypointsManager
 
 
 def _task_generator(poly, chunks):
@@ -27,7 +28,7 @@ img_lower = - img_upper
 sqrt_points_total = 200
 sqrt_chunks_amount = 20
 polynomial_coefficients=(-16,0,0,0,15,0,0,0,1)
-n_workers = 7
+n_workers = 2
 
 
 if __name__ == "__main__":
@@ -38,13 +39,17 @@ if __name__ == "__main__":
     sqrt_points_per_chunk = int(sqrt_points_total // sqrt_chunks_amount)
     print(f"[Main] sqrt_points_per_chunk: {sqrt_points_per_chunk}")
 
-    filename = f"parallel_pool_{sqrt_points_total}.tiff"
+    filename = f"dist_parallel_pool_{sqrt_points_total}.tiff"
 
     b = time.perf_counter()
     chunks = utils.divide_complex_space(real_lower, real_upper, img_lower, img_upper, sqrt_points_per_chunk, sqrt_chunks_amount, lazy=True)
     chunks = chunks.data
     e = time.perf_counter()
     print(f"[Main] Dividing into chunks took {e-b:.2f} seconds")
+    # workers can also be spawned by launching the distributed_worker.py file directly
+    for _ in range(n_workers):
+        EntrypointsManager.spawn_one_dist_worker()
+    print(f"[Main] Spawned {n_workers} distributed workers")
     tasks = _task_generator(poly, chunks)
 
     try:
