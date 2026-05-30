@@ -4,7 +4,6 @@ from math import sqrt
 from multiprocessing import (
     get_start_method,
     Pool,
-    Process,
     Queue,
     set_start_method,
 )
@@ -14,7 +13,6 @@ from typing import (
 )
 
 import numpy as np
-import numpy.typing
 from tqdm import tqdm
 
 from .data_models import (
@@ -22,7 +20,6 @@ from .data_models import (
     Task,
 )
 from .newton_raphson_compute_numba import calculate_newton_raphson
-from .utils import combine_arrays_into_square
 
 
 logger = logging.getLogger(__name__)
@@ -74,75 +71,9 @@ def newton_raphson_worker_local(task: Task) -> Tuple[int, RootConvergenceMap] | 
         logger.error(f"Worker failed: {e}")
         return None
 
-def launch_parallel_fixed(poly: np.polynomial.Polynomial, chunks: List[Tuple]) -> np.ndarray:
-    """
-    Allows to spawn multiple Processes, each doing calculate_newton_raphson on one chunk of complex space.
-    The chunks must have "square" amount of elements
-
-    """
-    if sqrt(len(chunks)) != int(sqrt(len(chunks))):
-        raise ValueError(f'chunks must be square, received {len(chunks)}')
-
-    mp_queue = Queue()
-    processes = []
-    results = []
-    for worker_no, chunk in enumerate(chunks):
-        real_linspace, imaginary_linspace = chunk
-        p = Process(target=newton_raphson_worker, args=(mp_queue, worker_no, poly, real_linspace, imaginary_linspace))
-        processes.append(p)
-        p.start()
-
-    for _ in range(len(processes)):
-        results.append(mp_queue.get())
-
-    for p in processes:
-        p.join()
-
-    if len(results) != len(chunks):
-        raise RuntimeError(
-            f'Something went horribly wrong - there were {len(chunks)} workers, but {len(results)} results came back',
-        )
-
-    results.sort(key=lambda x: x[0])  # Sort by worker_id to maintain order
-    results = [pair[1] for pair in results]  # after sorting leave only the arrays
-    return combine_arrays_into_square(results)
-
 
 def newton_raphson_worker_wrapper(args):
     return newton_raphson_worker(*args)
-
-
-def launch_parallel_pool(poly: np.polynomial.Polynomial, chunks: List[Tuple], n_workers=4) -> np.ndarray:
-    """
-    Takes list of chunks and launches them in parallel using multiprocessing pool executor.
-    Allows for better load balancing.
-    Chunks need to be linspaces (this doesn't, and will not, allow for lazy chunking) - without using tiled writer your
-    machine RAM will end long before you even notice memory footprint of calculating all chunks at once.
-
-    """
-    if sqrt(len(chunks)) != int(sqrt(len(chunks))):
-        raise ValueError(f'chunks must be square, received {len(chunks)}')
-
-    # None for the Queue
-    tasks = [(None, worker_no, poly, chunk[0], chunk[1])
-             for worker_no, chunk in enumerate(chunks)]
-
-    with Pool(processes=n_workers) as pool:
-        # results = pool.starmap(newton_raphson_worker, tasks)
-        results = list(
-            tqdm(
-                pool.imap_unordered(newton_raphson_worker_wrapper, tasks, chunksize=32),
-                total=len(tasks),
-            ),
-        )
-    if len(results) != len(chunks):
-        raise RuntimeError(
-            f'Something went horribly wrong - there were {len(chunks)} chunks, but {len(results)} results came back',
-        )
-
-    results.sort(key=lambda x: x[0])  # Sort by task id to maintain order
-    results = [pair[1] for pair in results]  # after sorting leave only the arrays
-    return combine_arrays_into_square(results)
 
 
 def _task_generator(queue, poly, chunks, used_type):
