@@ -2,8 +2,8 @@ import logging
 import warnings
 from typing import (
     Iterable,
-    List,
 )
+from warnings import deprecated
 
 import numpy as np
 import numpy.polynomial as np_poly
@@ -12,25 +12,10 @@ import scipy
 
 logger = logging.getLogger(__name__)
 
-from .utils import compare_with_values
 from .data_models import RootConvergenceMap
 
-def calc_newt_and_return_root_no(
-        x: complex,
-        poly: np_poly.Polynomial,
-        deriv: np_poly.Polynomial,
-        roots_list: List[complex],
-        iterations: int = 100,
-) -> int:
-    try:
-        root = scipy.optimize.newton(poly, x0=x, fprime=deriv, maxiter=iterations, tol=1e-12)
-    except RuntimeError:
-        return -1
 
-    idx = compare_with_values(roots_list, root)
-    return idx
-
-
+@deprecated("Deprecated in favor of Numba, which is over 2x faster. Use newton_raphson_compute_numba module")
 def calc_newt_and_return_root_no_vectorized(
         x: np.typing.NDArray[complex],
         poly: np_poly.Polynomial,
@@ -58,6 +43,7 @@ def calc_newt_and_return_root_no_vectorized(
     return RootConvergenceMap(data=result)
 
 
+@deprecated("Deprecated in favor of Numba, which is over 2x faster. Use newton_raphson_compute_numba module")
 def calculate_newton_raphson(
         poly: np_poly.Polynomial,
         N: int = 500,
