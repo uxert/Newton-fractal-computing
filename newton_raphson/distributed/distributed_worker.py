@@ -1,12 +1,12 @@
 import logging
 import pickle
 
-from constants import amqp_url
-from .newton_raphson_compute_numba import calculate_newton_raphson
+from .constants import amqp_url
+from newton_raphson.compute.newton_raphson_compute_numba import calculate_newton_raphson
 
 
 # hardcoded so that logging sets up correctly even when launching this module directly (gets name __main__ then)
-logger = logging.getLogger("newton_raphson.distributed_worker")
+logger = logging.getLogger("newton_raphson.distributed.distributed_worker")
 
 def start_newton_raphson_worker(
         tasks_queue: str = "tasks",

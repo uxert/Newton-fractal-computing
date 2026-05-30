@@ -9,7 +9,6 @@ from .data_models import (
     RootConvergenceMap,
     Task,
 )
-from .distributed_worker import start_newton_raphson_worker
 from .launch_multiprocess import newton_raphson_worker_local
 
 
@@ -53,7 +52,7 @@ class EntrypointsManager:
         than 2-3 CPU cores. Maybe this will be optimized in the future. However, right now on 'cpu-rich' systems
         spawning more than one worker is recommended.
         """
-
+        from newton_raphson.distributed.distributed_worker import start_newton_raphson_worker
         ctx = get_context("spawn")
         p = ctx.Process(target=start_newton_raphson_worker)
         cls.spawned_processes.append(p)
