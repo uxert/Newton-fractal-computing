@@ -41,9 +41,10 @@ def read_root():
     return {"Hello": "World"}
 
 @app.get("/api/tiles/{z}/{x}/{y}.png")
-def get_tiles(request: Request, z: int, x: float, y: float, coeffs: str):
+def get_tiles(request: Request, z: int, x: float, y: float, coeffs: str, n: str):
     coefficients = [float(x) for x in coeffs.split(",")]
-    real, img = get_zxy_complex_space_offset(z, x, y)
+    n = int(n)
+    real, img = get_zxy_complex_space_offset(z, x, y, n)
     task = Task(0, np.polynomial.Polynomial(coefficients), real, img)
     result = get_entrypoints_manager(request).submit_task_to_local_pool_and_wait(task, timeout_secs=2)
     if result is None:

@@ -3,10 +3,10 @@ import "leaflet/dist/leaflet.css";
 
 let tileLayer: L.TileLayer | null = null;
 
-function buildTileUrl(coefficients: number[]) {
+function buildTileUrl(coefficients: number[], n: number) {
   const coeffs = encodeURIComponent(coefficients.join(","));
 
-  return `http://127.0.0.1:8000/api/tiles/{z}/{x}/{y}.png?coeffs=${coeffs}`;
+  return `http://127.0.0.1:8000/api/tiles/{z}/{x}/{y}.png?coeffs=${coeffs}&n=${n}`;
 }
 
 export function createMap(elementId: string) {
@@ -21,7 +21,7 @@ export function createMap(elementId: string) {
     zoomSnap: 1,
   }).setView([0.0, 0.0], 0);
 
-  tileLayer = L.tileLayer(buildTileUrl([1, 0, -3, 2]), {
+  tileLayer = L.tileLayer(buildTileUrl([1, 0, -3, 2], 200), {
     tileSize: 200,
     maxZoom: 30,
     attribution: "me",
@@ -30,10 +30,10 @@ export function createMap(elementId: string) {
   return map;
 }
 
-export function setParameters(coefficients: number[]) {
+export function setParameters(coefficients: number[], n: number) {
   if (!tileLayer) {
     throw new Error("Tile layer not initialized. Call createMap() first.");
   }
 
-  tileLayer.setUrl(buildTileUrl(coefficients));
+  tileLayer.setUrl(buildTileUrl(coefficients, n));
 }

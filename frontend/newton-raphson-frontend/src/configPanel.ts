@@ -23,6 +23,14 @@ export function createConfigPanel(elementId: string) {
     </label>
 
     <div id="polynomial-preview"></div>
+    <label>
+    N
+    <input
+      id="n"
+      type="number"
+      value="200"
+      placeholder="200">
+    </label>
 
     <button id="save-btn">Save</button>
 
@@ -31,6 +39,9 @@ export function createConfigPanel(elementId: string) {
 
   const coefficientsInput =
     panel.querySelector<HTMLInputElement>("#coefficients")!;
+
+  const nInput =
+      panel.querySelector<HTMLInputElement>("#n")!;
 
   const polynomialPreview =
     panel.querySelector<HTMLDivElement>("#polynomial-preview")!;
@@ -61,7 +72,7 @@ export function createConfigPanel(elementId: string) {
       return;
     }
 
-    setParameters(coefficients);
+    setParameters(coefficients, nInput.valueAsNumber);
   });
 
   coefficientsInput.addEventListener("input", updatePreview);
