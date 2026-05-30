@@ -2,7 +2,7 @@ import logging
 import pickle
 
 from constants import amqp_url
-from .newton_raphson_compute import calculate_newton_raphson
+from .newton_raphson_compute_numba import calculate_newton_raphson
 
 
 # hardcoded so that logging sets up correctly even when launching this module directly (gets name __main__ then)
