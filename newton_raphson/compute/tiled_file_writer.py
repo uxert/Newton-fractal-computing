@@ -4,18 +4,19 @@ import os
 import pickle
 import uuid
 from multiprocessing import Process
+from typing import Optional
 
 import h5py
 import matplotlib.cm as cm
 import numpy as np
 import tifffile
 
-from newton_raphson.distributed.constants import amqp_url
 from newton_raphson.distributed.amqp_utils import (
     check_pika_lib_availability,
     obtain_amqp_blocking_connection,
     obtain_amqp_channel,
 )
+from newton_raphson.distributed.constants import amqp_url
 
 
 logger = logging.getLogger(__name__)
@@ -33,7 +34,7 @@ class TiledFileWriter:
     def __init__(
             self,
             filename,
-            tile_queue: multiprocessing.Queue,
+            tile_queue: Optional[multiprocessing.Queue],  # is None when working in distributed mode (uses pika then)
             sqrt_points_total,
             sqrt_tiles_amount,
             dtype=np.uint8,
@@ -51,9 +52,14 @@ class TiledFileWriter:
             compression: Compression method ('adobe_deflate', 'lzw', 'jpeg', None)
             compression_level: Compression level 1-9 (for deflate)
             queue_maxsize: Maximum number of tiles to buffer in queue
+            distributed: instead of `tile_queue`, reads chunks to write from pika queue allowing for distributed computing
         """
         if sqrt_points_total % sqrt_tiles_amount != 0:
             raise ValueError("sqrt_points_total must be divisible by sqrt_tiles_amount")
+        if distributed and tile_queue is not None:
+            raise ValueError("Cannot connect distributed with tile_queue: choose one or the other")
+        if not distributed and tile_queue is None:
+            raise ValueError("Cannot start file writer in distributed=False mode without providing tile_queue")
 
         self.filename = filename
         self.h5_filename = f"{sqrt_points_total}-{uuid.uuid4()}.h5"
@@ -102,68 +108,69 @@ class TiledFileWriter:
         dset[start_row:start_row + tile_size,
         start_col:start_col + tile_size] = tile_data + 1  # + 1 so -1 (for black) becomes 0
 
-    def _writer_process_func(self):
+    def _local_writer_process_func(self):
         """
         The writer process function that runs in a separate process.
         Keeps the h5 file open and writes fragments as they arrive.
         Thanks to magic of h5 they can be out-of-order.
         """
-        if self.distributed is False:
-            with h5py.File(self.h5_filename, "r+") as f:
-                dset = f[self.h5_dset_name]
-                while True:
-                    item = self.tile_queue.get(block=True)
-                    if item is None:
-                        break
+        logger.info("Starting writer process for local")
+        with h5py.File(self.h5_filename, "r+") as f:
+            dset = f[self.h5_dset_name]
+            while True:
+                item = self.tile_queue.get(block=True)
+                if item is None:
+                    break
 
-                    tile_no, tile_data = item
-                    self.write_one_tile(dset, tile_no, tile_data)
-        else:
-            if check_pika_lib_availability() is False:
-                raise ImportError("Cannot use distributed tile writer without `pika`, install requirements/amqp.txt")
+                tile_no, tile_data = item
+                self.write_one_tile(dset, tile_no, tile_data)
+        logger.info("Writer process finished.")
 
-            logger.info("Establishing rabbit queue with tiles")
-            queue_name = "tiles"
-            connection = obtain_amqp_blocking_connection(amqp_url)
-            channel = obtain_amqp_channel(connection, queue_name)
+    def _dist_writer_process_func(self):
+        logger.info(f"Starting writer process for distributed deployment using pika")
+        if check_pika_lib_availability() is False:
+            raise ImportError("Cannot use distributed tile writer without `pika`, install requirements/amqp.txt")
 
-            counter = 0
-            with h5py.File(self.h5_filename, "r+") as f:
-                dset = f[self.h5_dset_name]
+        logger.info("Establishing rabbit queue with tiles")
+        queue_name = "tiles"
+        connection = obtain_amqp_blocking_connection(amqp_url)
+        channel = obtain_amqp_channel(connection, queue_name)
 
-                # 2. Prosta pętla konsumująca – odpowiednik while True + queue.get()
-                for method_frame, properties, body in channel.consume(
-                        queue=queue_name,
-                        inactivity_timeout=None,  # blokuj aż przyjdzie wiadomość
-                ):
-                    # W teorii inactivity_timeout=None => nie będzie None,
-                    # ale ostrożność nie zaszkodzi.
-                    if method_frame is None:
-                        continue
+        counter = 0
+        with h5py.File(self.h5_filename, "r+") as f:
+            dset = f[self.h5_dset_name]
 
-                    item = pickle.loads(body)
+            # 2. Simple consume loop, equivalent of while True + queue.get()
+            for method_frame, properties, body in channel.consume(
+                    queue=queue_name,
+                    inactivity_timeout=None,  # wait as long as it takes
+            ):
+                # W teorii inactivity_timeout=None => nie będzie None,
+                # ale ostrożność nie zaszkodzi.
+                if method_frame is None:
+                    continue
 
-                    # Sygnał końca – zachowanie jak dla item is None w Queue
-                    if item is None:
-                        channel.basic_ack(method_frame.delivery_tag)
-                        break
-                    counter += 1
-                    tile_no, tile_data = item
-                    logger.info(f"Received tile to write. Tile no: {tile_no}")
+                item = pickle.loads(body)
 
-                    self.write_one_tile(dset, tile_no, tile_data)
-
-                    # Potwierdź przetworzenie
+                # End signal - identical behavior as for None item in the tile_queue
+                if item is None:
                     channel.basic_ack(method_frame.delivery_tag)
+                    break
+                counter += 1
+                tile_no, tile_data = item
+                logger.info(f"Received tile to write. Tile no: {tile_no}")
 
-                    if counter == self.total_tiles:
-                        logger.info(f"Received {counter} out of total {self.total_tiles} tasks - ending.")
-                        break
-                # kończymy konsumpcję
-                channel.cancel()
+                self.write_one_tile(dset, tile_no, tile_data)
 
-            connection.close()
+                # Ack the tile was processed
+                channel.basic_ack(method_frame.delivery_tag)
 
+                if counter == self.total_tiles:
+                    logger.info(f"Received {counter} out of total {self.total_tiles} tasks - ending.")
+                    break
+
+            channel.cancel()
+        connection.close()
         logger.info("Writer process finished.")
 
     def move_h5_to_tiff(self):
@@ -205,7 +212,12 @@ class TiledFileWriter:
         self.create_h5(self.sqrt_points_total, self.sqrt_points_total)
 
         # Create queue and start writer process
-        self.writer_process = Process(target=self._writer_process_func)
+        target_writer_func = (
+            self._local_writer_process_func
+            if not self.distributed
+            else self._dist_writer_process_func
+        )
+        self.writer_process = Process(target=target_writer_func)
         self.writer_process.start()
 
         self._is_started = True
