@@ -17,6 +17,7 @@ class Task:
     poly: np.polynomial.Polynomial
     real_linspace: np.ndarray
     img_linspace: np.ndarray
+    iterations: int = 50
 
 @dataclass(frozen=True)
 class RootConvergenceMap:
