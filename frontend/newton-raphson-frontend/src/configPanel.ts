@@ -113,7 +113,7 @@ panel.innerHTML = `
     polynomialPreview.innerHTML = formatPolynomial(coefficients);
   }
 
-  saveButton.addEventListener("click", async () => {
+  async function onFormSubmit() {
     const coefficients = parseCoefficients(coefficientsInput.value);
     console.log("Button sth sth")
 
@@ -127,14 +127,19 @@ panel.innerHTML = `
         iterations: iterationsInput.valueAsNumber,
     }
     setParameters(configObj);
-  });
+  }
+
+  saveButton.addEventListener("click", onFormSubmit);
 
   coefficientsInput.addEventListener("input", updatePreview);
 
-  coefficientsInput.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
-      saveButton.click();
-    }
+  const allInputs = content.querySelectorAll<HTMLInputElement>("input");
+  allInputs.forEach((input) => {
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        saveButton.click();
+      }
+    });
   });
 
   updatePreview();
