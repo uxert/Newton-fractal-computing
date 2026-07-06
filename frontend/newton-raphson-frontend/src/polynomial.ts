@@ -2,6 +2,7 @@ export function formatPolynomial(coefficients: number[]): string {
   const degree = coefficients.length - 1;
 
   const terms = coefficients
+    .reverse()  // coefficients are given in ascending order, processed in descending order...
     .map((coef, index) => {
       if (coef === 0) return null;
 
@@ -29,7 +30,8 @@ export function formatPolynomial(coefficients: number[]): string {
         term: `${coefficientPart}${variablePart}`,
       };
     })
-    .filter(Boolean);
+    .filter(Boolean)
+    .reverse()  // ...but should be rendered again in ascending order :);
 
   if (terms.length === 0) {
     return "0";
