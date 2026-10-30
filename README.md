@@ -27,22 +27,12 @@ The app features:
 
 ## How to use
 
-The app can be self-deployed. **Docker deployment in progress.**  
-It consists of a Python backend and Vite frontend. Currently to use it, you need to launch from source.
+The app can be self-deployed or **set up using Docker Compose (recommended)**. If you want to launch from source, see [instructions below](#launch-from-source)
 
-### The backend setup
-Install Python and preferably create a separate virtual environment, for example using [venv](https://docs.python.org/3/library/venv.html).
-Inside the virtual environment, there are two things to do:
-1. install required dependencies by running `pip install -r requirements/http-server.txt`
-2. run the server, provided entrypoint will start everything the backend needs: `python -m newton_raphson.server.main_server `
-
-### The frontend setup
-0. Install [Node.js](https://nodejs.org/en/download/)
-1. change directory to `frontend/newton-raphson-frontend`
-2. install all deps: `npm install`
-3. run the app: `npm run dev`
-
-After that you are ready to go! The frontend is available at http://localhost:5173.
+### Docker
+0. Either clone the repo, or manually copy the compose file present at the repo root
+1. Run `docker compose up -d`. Requires ports 8000 and 8081 to be free
+2. That's it! You can access the UI at port 8081
 
 ### Usage
 You can configure parameters in the panel in the right-upper corner. Polynomial coefficients are entered lowest-degree-first,
@@ -72,6 +62,22 @@ The same spot, different number of iterations (50 vs 75):
 
 ## History
 This part of the readme is still in development and will describe the legacy code.
+
+## Launch from source
+
+### The backend setup
+Install Python and preferably create a separate virtual environment, for example using [venv](https://docs.python.org/3/library/venv.html).
+Inside the virtual environment, there are two things to do:
+1. install required dependencies by running `pip install -r requirements/http-server.txt`
+2. run the server, provided entrypoint will start everything the backend needs: `python -m newton_raphson.server.main_server `
+
+### The frontend setup
+0. Install [Node.js](https://nodejs.org/en/download/)
+1. change directory to `frontend/newton-raphson-frontend`
+2. install all deps: `npm install`
+3. run the app: `npm run dev`
+
+After that you are ready to go! The frontend is available at http://localhost:5173.
 
 ---
 
