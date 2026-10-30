@@ -32,7 +32,7 @@ panel.innerHTML = `
     <div id="polynomial-preview"></div>
 
     <label>
-      N
+      Pixels per unit (resolution)
       <input
         id="n"
         type="number"
