@@ -1,13 +1,13 @@
 services:
   frontend:
-    image: newton-raphson-frontend:${VERSION:-latest}
+    image: uxert/newton-raphson-frontend:${VERSION:-latest}
     build:
       context: ./frontend/newton-raphson-frontend
     ports:
       - "8081:80"
 
   backend:
-    image: newton-raphson-backend:${VERSION:-latest}
+    image: uxert/newton-raphson-backend:${VERSION:-latest}
     build:
       context: ./backend
     ports:
