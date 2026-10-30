@@ -25,7 +25,7 @@ from ..compute.utils import (
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.epm = EntrypointsManager()
-    app.state.epm.spawn_local_workers_pool(2)
+    app.state.epm.spawn_local_workers_pool(4)
 
     yield
     app.state.epm.kill_all_workers()
