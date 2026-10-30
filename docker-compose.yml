@@ -10,3 +10,5 @@ services:
     image: newton-raphson-backend:${VERSION:-latest}
     build:
       context: ./backend
+    ports:
+      - "8000:8000"
